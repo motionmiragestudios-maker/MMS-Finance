@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f5f1ec;
+  --foreground: #211d1a;
 }
 
 @theme inline {
@@ -10,13 +10,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
@@ -34,6 +27,16 @@ button, input, select, textarea { font: inherit; }
 .app-shell > aside .border-b { border-color: #302d2a; }
 .app-shell > aside nav a { border-radius: 8px; color: #bcb6b0; }
 .app-shell > aside nav a:hover { background: #292624; color: #fff; }
+.app-shell > aside nav a.nav-active { background: #e94b251f; color: #ff9a7e; box-shadow: inset 3px 0 var(--accent); }
+.app-content > main { min-height: 100vh; background: var(--canvas); color: var(--ink); }
+.app-content > main h1, .app-content > main h2, .app-content > main h3 { color: var(--ink); }
+.app-content > main p, .app-content > main span, .app-content > main td, .app-content > main th { color: inherit; }
+.app-content > main button[class*="bg-slate-900"] { background: var(--accent) !important; }
+.app-content > main button[class*="bg-slate-900"]:hover { background: #c93a19 !important; }
+.app-content > main .border-slate-200 { border-color: var(--line); }
+.app-content > main .bg-white { background: var(--paper); }
+.app-content > main .text-slate-500, .app-content > main .text-slate-600 { color: #756c64; }
+.app-content > main .text-slate-900 { color: var(--ink); }
 .invoice-workspace { min-height: 100vh; display: grid; grid-template-columns: minmax(360px, 0.82fr) minmax(560px, 1.18fr); gap: 0; }
 .invoice-editor { padding: 42px clamp(24px, 4vw, 64px); background: #fbf8f4; border-right: 1px solid var(--line); }
 .editor-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 42px; }
