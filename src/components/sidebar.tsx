@@ -1,14 +1,13 @@
 import Link from "next/link";
 
 const navItems = [
-  { label: "Dashboard", href: "/" },
-  { label: "Create Invoice", href: "/create-invoice" },
+  { label: "Create invoice", href: "/" },
+  { label: "Dashboard", href: "/finance" },
   { label: "Clients", href: "/clients" },
   { label: "Projects", href: "/projects" },
   { label: "Invoices", href: "/invoices" },
   { label: "Payments", href: "/payments" },
   { label: "Expenses", href: "/expenses" },
-  { label: "Finance", href: "/finance" },
   { label: "Settings", href: "/settings" },
   { label: "Profile", href: "/profile" },
 ];

@@ -1,0 +1,166 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum InvoiceStatus {
+  Draft
+  Sent
+  PartiallyPaid
+  Paid
+  Overdue
+  Cancelled
+}
+
+enum ProjectStatus {
+  Enquiry
+  QuotationSent
+  Approved
+  InProduction
+  PostProduction
+  Delivered
+  Completed
+  Cancelled
+}
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         String    @default("owner")
+  invoices     Invoice[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model CompanyProfile {
+  id              String   @id @default("company")
+  name            String
+  tagline         String
+  address         String
+  phone           String
+  email           String
+  website         String
+  gstNumber       String?
+  panNumber       String?
+  bankDetails     String?
+  upiDetails      String?
+  paymentTerms    String
+  invoiceNotes    String
+  quotationTerms  String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Client {
+  id                String    @id
+  name              String
+  contactPerson     String
+  email             String
+  phone             String
+  billingAddress    String
+  currency          String    @default("INR")
+  gst               String
+  paymentTerms      String
+  notes             String
+  outstandingBalance Int       @default(0)
+  projects          Project[]
+  invoices          Invoice[]
+  payments          Payment[]
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model Project {
+  id               String         @id
+  name             String
+  clientId         String
+  description      String
+  startDate        DateTime
+  shootDate        DateTime
+  deliveryDate     DateTime
+  quotationAmount  Int
+  invoiceAmount    Int
+  paymentsReceived Int
+  projectExpenses  Int
+  status           ProjectStatus
+  billingStatus    InvoiceStatus
+  notes            String
+  client           Client         @relation(fields: [clientId], references: [id])
+  invoices         Invoice[]
+  payments         Payment[]
+  expenses         Expense[]
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+}
+
+model Invoice {
+  id          String        @id
+  number      String        @unique
+  ownerId     String
+  clientId    String
+  projectId   String?
+  invoiceDate DateTime
+  dueDate     DateTime
+  status      InvoiceStatus
+  subtotal    Int
+  discount    Int
+  tax         Int
+  total       Int
+  paid        Int
+  outstanding Int
+  notes       String
+  owner       User          @relation(fields: [ownerId], references: [id])
+  client      Client        @relation(fields: [clientId], references: [id])
+  project     Project?       @relation(fields: [projectId], references: [id])
+  items       InvoiceItem[]
+  payments    Payment[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model InvoiceItem {
+  id          String  @id @default(cuid())
+  invoiceId   String
+  description String
+  quantity    Int
+  rate        Int
+  discount    Int
+  tax         Int
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+}
+
+model Payment {
+  id        String   @id
+  invoiceId String
+  clientId  String
+  projectId String?
+  amount    Int
+  date      DateTime
+  method    String
+  reference String
+  notes     String
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id])
+  client    Client   @relation(fields: [clientId], references: [id])
+  project   Project? @relation(fields: [projectId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Expense {
+  id        String    @id
+  date      DateTime
+  category  String
+  vendor    String
+  amount    Int
+  projectId String?
+  method    String
+  reference String
+  notes     String
+  project   Project?  @relation(fields: [projectId], references: [id])
+  createdAt DateTime  @default(now())
+}
