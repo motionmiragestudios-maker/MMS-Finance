@@ -1,4 +1,4 @@
-import { projects } from "@/lib/mock-data";
+import { projects } from "@/lib/ui-data";
 import { requireAuth } from "@/lib/require-auth";
 
 export default async function ProjectsPage() {

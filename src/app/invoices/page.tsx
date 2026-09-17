@@ -1,4 +1,4 @@
-import { clients, formatCurrency, invoices } from "@/lib/mock-data";
+import { formatCurrency, invoices } from "@/lib/ui-data";
 import { requireAuth } from "@/lib/require-auth";
 
 export default async function InvoicesPage() {
@@ -26,11 +26,10 @@ export default async function InvoicesPage() {
           </thead>
           <tbody className="divide-y divide-slate-200">
             {invoices.map((invoice) => {
-              const client = clients.find((item) => item.id === invoice.clientId);
               return (
                 <tr key={invoice.id} className="text-sm text-slate-700">
                   <td className="px-5 py-4 font-medium text-slate-900">{invoice.number}</td>
-                  <td className="px-5 py-4">{client?.name}</td>
+                  <td className="px-5 py-4">Saved invoice</td>
                   <td className="px-5 py-4">{invoice.invoiceDate}</td>
                   <td className="px-5 py-4 font-medium">{formatCurrency(invoice.total)}</td>
                   <td className="px-5 py-4">

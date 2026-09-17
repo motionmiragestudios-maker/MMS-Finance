@@ -1,4 +1,4 @@
-import { formatCurrency, payments } from "@/lib/mock-data";
+import { formatCurrency, payments } from "@/lib/ui-data";
 import { requireAuth } from "@/lib/require-auth";
 
 export default async function PaymentsPage() {

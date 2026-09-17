@@ -1,4 +1,4 @@
-import { formatCurrency, incomeSummary } from "@/lib/mock-data";
+import { formatCurrency, incomeSummary } from "@/lib/ui-data";
 import { requireAuth } from "@/lib/require-auth";
 
 const metrics = [
@@ -32,15 +32,15 @@ export default async function FinancePage() {
         <div className="mt-4 grid gap-4 md:grid-cols-3">
           <div className="rounded-xl bg-slate-50 p-4">
             <p className="text-sm text-slate-500">Income by month</p>
-            <p className="mt-2 text-lg font-semibold">₹1.6L</p>
+            <p className="mt-2 text-lg font-semibold">₹0</p>
           </div>
           <div className="rounded-xl bg-slate-50 p-4">
             <p className="text-sm text-slate-500">Expenses by category</p>
-            <p className="mt-2 text-lg font-semibold">₹82K</p>
+            <p className="mt-2 text-lg font-semibold">₹0</p>
           </div>
           <div className="rounded-xl bg-slate-50 p-4">
             <p className="text-sm text-slate-500">Project margin</p>
-            <p className="mt-2 text-lg font-semibold">₹28K</p>
+            <p className="mt-2 text-lg font-semibold">₹0</p>
           </div>
         </div>
       </div>

@@ -7,6 +7,7 @@ const navItems = [
   { label: "Create invoice", href: "/" },
   { label: "Dashboard", href: "/finance" },
   { label: "Clients", href: "/clients" },
+  { label: "Vendors", href: "/vendors" },
   { label: "Projects", href: "/projects" },
   { label: "Invoices", href: "/invoices" },
   { label: "Payments", href: "/payments" },

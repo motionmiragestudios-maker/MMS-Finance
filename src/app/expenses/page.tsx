@@ -1,4 +1,4 @@
-import { expenses, formatCurrency } from "@/lib/mock-data";
+import { expenses, formatCurrency } from "@/lib/ui-data";
 import { requireAuth } from "@/lib/require-auth";
 
 export default async function ExpensesPage() {

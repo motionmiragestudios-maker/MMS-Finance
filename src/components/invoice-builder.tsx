@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { defaultCompanyProfile, workspaceKeys, type WorkspaceClient } from "@/lib/workspace";
 import type { CompanyProfile } from "@/types/finance";
 
