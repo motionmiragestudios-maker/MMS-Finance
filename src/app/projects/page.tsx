@@ -15,11 +15,12 @@ export default async function ProjectsPage() {
           <p className="text-sm uppercase tracking-[0.2em] text-slate-500">Sales pipeline</p>
           <h1 className="text-3xl font-bold">Quotations</h1>
         </div>
-        <FinanceRecordForm kind="project" clients={clients} />
       </div>
 
+      <div className="quotation-create-area"><FinanceRecordForm kind="project" clients={clients} /></div>
+
       <div className="space-y-4">
-        {projects.map((project) => (
+        {projects.length ? projects.map((project) => (
           <div key={project.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
@@ -38,7 +39,7 @@ export default async function ProjectsPage() {
               <div><span className="block text-slate-400">Status</span>{project.status.replace(/([a-z])([A-Z])/g, "$1 $2")}</div>
             </div>
           </div>
-        ))}
+        )) : <p className="muted">No quotations yet. Create your first quotation above.</p>}
       </div>
     </main>
   );

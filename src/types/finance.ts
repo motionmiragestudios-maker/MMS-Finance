@@ -28,6 +28,11 @@ export interface CompanyProfile {
   gstNumber?: string;
   panNumber?: string;
   bankDetails?: string;
+  bankAccountName?: string;
+  bankName?: string;
+  bankAccountNumber?: string;
+  bankBranch?: string;
+  bankIfsc?: string;
   upiDetails?: string;
   paymentTerms: string;
   invoiceNotes: string;
