@@ -16,8 +16,8 @@ export default async function InvoicesPage() {
         <Link href="/" className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">Create invoice</Link>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <table className="min-w-full divide-y divide-slate-200 text-left">
+      <div className="invoice-table-wrap overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <table className="invoice-table min-w-full divide-y divide-slate-200 text-left">
           <thead className="bg-slate-50 text-sm uppercase tracking-wide text-slate-500">
             <tr>
               <th className="px-5 py-3">Invoice</th>
@@ -25,14 +25,15 @@ export default async function InvoicesPage() {
               <th className="px-5 py-3">Date</th>
               <th className="px-5 py-3">Amount</th>
               <th className="px-5 py-3">Status</th>
+              <th className="px-5 py-3">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">
             {invoices.map((invoice) => {
               return (
                 <tr key={invoice.id} className="text-sm text-slate-700">
-                  <td className="px-5 py-4 font-medium text-slate-900">{invoice.number}</td>
-                  <td className="px-5 py-4">{invoice.client.name}</td>
+                  <td className="px-5 py-4 font-medium text-slate-900"><Link className="text-button" href={`/invoices/${invoice.id}`}>{invoice.number}</Link></td>
+                  <td className="px-5 py-4"><Link className="text-button" href={`/clients/${invoice.client.id}`}>{invoice.client.name}</Link></td>
                   <td className="px-5 py-4">{invoice.invoiceDate.toISOString().slice(0, 10)}</td>
                   <td className="px-5 py-4 font-medium">{formatCurrency(invoice.total)}</td>
                   <td className="px-5 py-4">
@@ -40,6 +41,7 @@ export default async function InvoicesPage() {
                       {invoice.status}
                     </span>
                   </td>
+                  <td className="px-5 py-4"><div className="invoice-table-actions"><Link href={`/invoices/${invoice.id}`} aria-label={`View ${invoice.number}`} title="View invoice">View</Link><Link href={`/create-invoice?edit=${invoice.id}`} aria-label={`Edit ${invoice.number}`} title="Edit invoice">Edit</Link><Link href={`/invoices/${invoice.id}#print`} aria-label={`Download ${invoice.number}`} title="Download invoice">PDF</Link></div></td>
                 </tr>
               );
             })}

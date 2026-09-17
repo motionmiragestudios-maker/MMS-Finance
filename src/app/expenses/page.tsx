@@ -16,8 +16,9 @@ export default async function ExpensesPage() {
           <p className="text-sm uppercase tracking-[0.2em] text-slate-500">Operational cost</p>
           <h1 className="text-3xl font-bold">Expenses</h1>
         </div>
-        <FinanceRecordForm kind="expense" projects={projects} />
       </div>
+
+      <div className="expense-create-area"><FinanceRecordForm kind="expense" projects={projects} /></div>
 
       <ExpenseList expenses={expenses.map((expense) => ({ id: expense.id, category: expense.category, vendor: expense.vendor, amount: expense.amount, date: expense.date.toISOString().slice(0, 10), method: expense.method, projectName: expense.project?.name ?? null }))} />
     </main>

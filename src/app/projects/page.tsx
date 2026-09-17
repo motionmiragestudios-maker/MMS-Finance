@@ -12,8 +12,8 @@ export default async function ProjectsPage() {
     <main className="p-8">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <p className="text-sm uppercase tracking-[0.2em] text-slate-500">Delivery pipeline</p>
-          <h1 className="text-3xl font-bold">Projects</h1>
+          <p className="text-sm uppercase tracking-[0.2em] text-slate-500">Sales pipeline</p>
+          <h1 className="text-3xl font-bold">Quotations</h1>
         </div>
         <FinanceRecordForm kind="project" clients={clients} />
       </div>
@@ -24,7 +24,7 @@ export default async function ProjectsPage() {
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
                 <h2 className="text-xl font-semibold text-slate-900">{project.name}</h2>
-                <p className="text-sm text-slate-500">{project.client.name} · {project.description}</p>
+                <p className="text-sm text-slate-500">{project.client.name} · {project.description || "Quotation without description"}</p>
               </div>
               <span className="inline-flex rounded-full bg-indigo-100 px-2 py-1 text-[10px] font-medium text-indigo-700">
                 {project.status.replace(/([a-z])([A-Z])/g, "$1 $2")}
@@ -32,10 +32,10 @@ export default async function ProjectsPage() {
             </div>
 
             <div className="mt-4 grid gap-4 md:grid-cols-4 text-sm text-slate-600">
-              <div><span className="block text-slate-400">Shoot date</span>{project.shootDate.toISOString().slice(0, 10)}</div>
-              <div><span className="block text-slate-400">Delivery</span>{project.deliveryDate.toISOString().slice(0, 10)}</div>
-              <div><span className="block text-slate-400">Quotation</span>₹{project.quotationAmount.toLocaleString("en-IN")}</div>
-              <div><span className="block text-slate-400">Expenses</span>₹{project.projectExpenses.toLocaleString("en-IN")}</div>
+              <div><span className="block text-slate-400">Quotation date</span>{project.startDate.toISOString().slice(0, 10)}</div>
+              <div><span className="block text-slate-400">Valid until</span>{project.deliveryDate.toISOString().slice(0, 10)}</div>
+              <div><span className="block text-slate-400">Quoted amount</span>₹{project.quotationAmount.toLocaleString("en-IN")}</div>
+              <div><span className="block text-slate-400">Status</span>{project.status.replace(/([a-z])([A-Z])/g, "$1 $2")}</div>
             </div>
           </div>
         ))}

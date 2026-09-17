@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { defaultCompanyProfile, formatIndianPhone, normalizeIndianPhoneInput, workspaceKeys, type WorkspaceClient } from "@/lib/workspace";
 import type { CompanyProfile } from "@/types/finance";
+import { ToastNotification } from "@/components/toast-notification";
 
 type LineItem = { id: number; description: string; quantity: number; rate: number };
 
@@ -27,11 +29,15 @@ export function InvoiceBuilder() {
   const [notes, setNotes] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
   const [items, setItems] = useState<LineItem[]>([emptyItem()]);
+  const [editingInvoiceId, setEditingInvoiceId] = useState("");
 
   useEffect(() => {
     const timer = window.setTimeout(async () => {
       const today = new Date().toISOString().slice(0, 10);
+      const editId = new URLSearchParams(window.location.search).get("edit") ?? "";
+      setEditingInvoiceId(editId);
       const storedCompany = localStorage.getItem(workspaceKeys.company);
       const storedLogo = localStorage.getItem(workspaceKeys.logo);
       const parsedCompany = storedCompany ? JSON.parse(storedCompany) : defaultCompanyProfile;
@@ -42,8 +48,16 @@ export function InvoiceBuilder() {
       setInvoiceDate(today);
       setDueDate(addDays(today, 27));
       setNotes(parsedCompany.invoiceNotes ?? defaultCompanyProfile.invoiceNotes);
-      const numberResponse = await fetch("/api/invoices?nextNumber=1");
-      if (numberResponse.ok) setInvoiceNumber((await numberResponse.json()).invoiceNumber);
+      if (editId) {
+        const invoiceResponse = await fetch(`/api/invoices?id=${editId}`);
+        if (invoiceResponse.ok) {
+          const invoice = await invoiceResponse.json();
+          setInvoiceNumber(invoice.number); setInvoiceDate(invoice.invoiceDate.slice(0, 10)); setDueDate(invoice.dueDate.slice(0, 10)); setClientId(invoice.clientId); setClientName(invoice.client.name); setClientEmail(invoice.client.email); setClientPhone(normalizeIndianPhoneInput(invoice.client.phone)); setClientAddress(invoice.client.billingAddress); setNotes(invoice.notes); setItems(invoice.items.map((item: { id: string; description: string; quantity: number; rate: number }) => ({ id: Number(item.id) || Date.now(), description: item.description, quantity: item.quantity, rate: item.rate })));
+        }
+      } else {
+        const numberResponse = await fetch("/api/invoices?nextNumber=1");
+        if (numberResponse.ok) setInvoiceNumber((await numberResponse.json()).invoiceNumber);
+      }
     }, 0);
     return () => window.clearTimeout(timer);
   }, []);
@@ -80,10 +94,18 @@ export function InvoiceBuilder() {
   async function saveInvoice() {
     setIsSaving(true);
     setSaveMessage("");
-    const response = await fetch("/api/invoices", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ invoiceNumber, invoiceDate, dueDate, clientId: clientId === "new" ? undefined : clientId, clientName, clientEmail, clientPhone: formatIndianPhone(clientPhone), clientAddress, notes, items }) });
+    const response = await fetch("/api/invoices", { method: editingInvoiceId ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: editingInvoiceId || undefined, invoiceNumber, invoiceDate, dueDate, clientId: clientId === "new" ? undefined : clientId, clientName, clientEmail, clientPhone: formatIndianPhone(clientPhone), clientAddress, notes, items }) });
     const result = await response.json();
     setIsSaving(false);
     setSaveMessage(response.ok ? "Invoice saved securely." : result.error ?? "Unable to save invoice.");
+    return response.ok;
+  }
+
+  async function saveAndPrint() {
+    setIsPrinting(true);
+    const saved = await saveInvoice();
+    if (saved) window.print();
+    setIsPrinting(false);
   }
 
   return (
@@ -91,13 +113,13 @@ export function InvoiceBuilder() {
       <section className="invoice-editor no-print">
         <div className="editor-heading">
           <div><p className="eyebrow">Invoice studio</p><h1>Make it official.</h1><p className="muted">Start from a clean canvas. Your saved company details and logo will appear automatically.</p></div>
-          <div className="editor-actions"><button className="secondary-button" type="button" onClick={saveInvoice} disabled={isSaving}>{isSaving ? "Saving..." : "Save invoice"}</button><button className="primary-button" type="button" onClick={() => window.print()}>Print / Save PDF</button></div>
+          <div className="editor-actions"><button className="secondary-button" type="button" onClick={() => void saveInvoice()} disabled={isSaving || isPrinting}>{isSaving ? "Saving..." : "Save invoice"}</button><button className="primary-button" type="button" onClick={() => void saveAndPrint()} disabled={isSaving || isPrinting}>{isPrinting ? "Saving invoice..." : "Save & Print PDF"}</button></div>
         </div>
-        {saveMessage && <p className="save-message" role="status">{saveMessage}</p>}
+        {saveMessage && <ToastNotification message={saveMessage} onDismiss={() => setSaveMessage("")} />}
 
         <div className="editor-section"><div className="section-heading"><span>01</span><h2>Invoice details</h2></div><div className="form-grid three-columns"><label>Invoice number<input placeholder="e.g. MMS-INV-2026-001" value={invoiceNumber} onChange={(event) => setInvoiceNumber(event.target.value)} /></label><label>Issue date<input type="date" value={invoiceDate} onChange={(event) => { const value = event.target.value; setInvoiceDate(value); if (autoDueDate && value) setDueDate(addDays(value, 27)); }} /></label><label>Due date<input type="date" disabled={autoDueDate} value={dueDate} onChange={(event) => setDueDate(event.target.value)} /><span className="date-option"><input type="checkbox" checked={autoDueDate} onChange={(event) => { const checked = event.target.checked; setAutoDueDate(checked); if (checked && invoiceDate) setDueDate(addDays(invoiceDate, 27)); }} /> Auto-calculate 28-day due date</span></label></div></div>
 
-        <div className="editor-section"><div className="section-heading"><span>02</span><h2>Bill to</h2><a className="text-button" href="/clients">Manage clients</a></div><div className="form-grid two-columns"><label>Saved client<select value={clientId} onChange={(event) => updateClient(event.target.value)}><option value="new">New client</option>{clients.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}</select></label><label>Client name<input placeholder="Client or company name" value={clientName} onChange={(event) => setClientName(event.target.value)} /></label><label>Email<input type="email" placeholder="billing@email.com" value={clientEmail} onChange={(event) => setClientEmail(event.target.value)} /></label><label>Phone <span className="field-hint">+91 is added automatically</span><input required type="tel" inputMode="numeric" pattern="[0-9]{10}" maxLength={10} placeholder="9876543210" title="Enter 10 digits; +91 is added automatically" value={clientPhone} onChange={(event) => setClientPhone(normalizeIndianPhoneInput(event.target.value))} /></label><label>Billing address<textarea required rows={2} placeholder="Full billing address" value={clientAddress} onChange={(event) => setClientAddress(event.target.value)} /></label></div></div>
+        <div className="editor-section"><div className="section-heading"><span>02</span><h2>Bill to</h2><Link className="text-button" href="/clients">Manage clients</Link></div><div className="form-grid two-columns"><label>Saved client<select value={clientId} onChange={(event) => updateClient(event.target.value)}><option value="new">New client</option>{clients.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}</select></label><label>Client name<input placeholder="Client or company name" value={clientName} onChange={(event) => setClientName(event.target.value)} /></label><label>Email<input type="email" placeholder="billing@email.com" value={clientEmail} onChange={(event) => setClientEmail(event.target.value)} /></label><label>Phone <span className="field-hint">+91 is added automatically</span><input required type="tel" inputMode="numeric" pattern="[0-9]{10}" maxLength={10} placeholder="9876543210" title="Enter 10 digits; +91 is added automatically" value={clientPhone} onChange={(event) => setClientPhone(normalizeIndianPhoneInput(event.target.value))} /></label><label>Billing address<textarea required rows={2} placeholder="Full billing address" value={clientAddress} onChange={(event) => setClientAddress(event.target.value)} /></label></div></div>
 
         <div className="editor-section"><div className="section-heading"><span>03</span><h2>Services</h2><button className="text-button" type="button" onClick={addItem}>+ Add line</button></div><div className="line-editor">{items.map((item) => <div className="line-row" key={item.id}><input aria-label="Service description" placeholder="What are you billing for?" value={item.description} onChange={(event) => updateItem(item.id, "description", event.target.value)} /><input aria-label="Quantity" type="number" min="1" value={item.quantity} onChange={(event) => updateItem(item.id, "quantity", event.target.value)} /><input aria-label="Rate" type="number" min="0" placeholder="0" value={item.rate || ""} onChange={(event) => updateItem(item.id, "rate", event.target.value)} /><button className="remove-button" type="button" aria-label="Remove line" onClick={() => removeItem(item.id)}>×</button></div>)}<div className="line-labels"><span>Description</span><span>Qty</span><span>Rate</span></div></div></div>
 

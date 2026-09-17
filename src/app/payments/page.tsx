@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
-import { formatCurrency } from "@/lib/mock-data";
 import { requireAuth } from "@/lib/require-auth";
 import { FinanceRecordForm } from "@/components/finance-record-form";
+import { PaymentList } from "@/components/payment-list";
 
 export default async function PaymentsPage() {
   await requireAuth();
@@ -16,25 +16,11 @@ export default async function PaymentsPage() {
           <p className="text-sm uppercase tracking-[0.2em] text-slate-500">Cash collection</p>
           <h1 className="text-3xl font-bold">Payments</h1>
         </div>
-        <FinanceRecordForm kind="payment" invoices={invoices} />
       </div>
 
-      <div className="space-y-4">
-        {payments.map((payment) => (
-          <div key={payment.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <div className="text-lg font-semibold text-slate-900">{payment.client.name}</div>
-                <div className="text-sm text-slate-500">{payment.reference} · {payment.method} · {payment.date.toISOString().slice(0, 10)}</div>
-              </div>
-              <div className="text-right">
-                <div className="text-lg font-semibold">{formatCurrency(payment.amount)}</div>
-                <div className="text-xs text-slate-500">Received</div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+      <div className="payment-create-area"><FinanceRecordForm kind="payment" invoices={invoices} /></div>
+
+      <PaymentList payments={payments.map((payment) => ({ id: payment.id, clientName: payment.client.name, amount: payment.amount, reference: payment.reference, method: payment.method, date: payment.date.toISOString().slice(0, 10) }))} />
     </main>
   );
 }

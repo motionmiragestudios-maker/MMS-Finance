@@ -20,3 +20,25 @@ export async function POST(request: Request) {
     return NextResponse.json(payment, { status: 201 });
   } catch { return NextResponse.json({ error: "Unable to record payment." }, { status: 400 }); }
 }
+
+export async function PATCH(request: Request) {
+  const session = await auth();
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const body = await request.json();
+    const amount = Number(body.amount);
+    if (!body.id || !Number.isInteger(amount) || amount <= 0 || !body.date) return NextResponse.json({ error: "Valid amount and date are required." }, { status: 400 });
+    const existing = await db.payment.findUnique({ where: { id: body.id } });
+    if (!existing) return NextResponse.json({ error: "Payment not found." }, { status: 404 });
+    const payment = await db.$transaction(async (transaction) => {
+      const updated = await transaction.payment.update({ where: { id: body.id }, data: { amount, date: new Date(`${body.date}T00:00:00.000Z`), method: typeof body.method === "string" ? body.method : existing.method, reference: typeof body.reference === "string" ? body.reference.trim() : existing.reference } });
+      const invoice = await transaction.invoice.findUnique({ where: { id: existing.invoiceId } });
+      if (invoice) {
+        const paid = invoice.paid - existing.amount + amount;
+        await transaction.invoice.update({ where: { id: invoice.id }, data: { paid, outstanding: Math.max(invoice.total - paid, 0), status: paid >= invoice.total ? "Paid" : "PartiallyPaid" } });
+      }
+      return updated;
+    });
+    return NextResponse.json(payment);
+  } catch { return NextResponse.json({ error: "Unable to update this payment." }, { status: 400 }); }
+}
