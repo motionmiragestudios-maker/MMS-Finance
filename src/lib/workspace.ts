@@ -39,3 +39,14 @@ export const workspaceKeys = {
   clients: "motion-mirage-clients",
   vendors: "motion-mirage-vendors",
 } as const;
+
+export function normalizeIndianPhoneInput(value: string) {
+  const digits = value.replace(/\D/g, "");
+  const hasCountryCode = value.trim().startsWith("+91") || (digits.length > 10 && digits.startsWith("91"));
+  return hasCountryCode ? digits.slice(2, 12) : digits.slice(0, 10);
+}
+
+export function formatIndianPhone(value: string) {
+  const digits = normalizeIndianPhoneInput(value);
+  return digits.length === 10 ? `+91${digits}` : "";
+}

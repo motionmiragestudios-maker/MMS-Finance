@@ -1,16 +1,27 @@
-import { formatCurrency, incomeSummary } from "@/lib/ui-data";
+import { db } from "@/lib/db";
+import { formatCurrency } from "@/lib/mock-data";
 import { requireAuth } from "@/lib/require-auth";
 
-const metrics = [
-  { label: "Invoiced", value: formatCurrency(incomeSummary.totalInvoiced) },
-  { label: "Received", value: formatCurrency(incomeSummary.totalReceived) },
-  { label: "Outstanding", value: formatCurrency(incomeSummary.totalOutstanding) },
-  { label: "Expenses", value: formatCurrency(incomeSummary.totalExpenses) },
-  { label: "Net cash", value: formatCurrency(incomeSummary.netCashResult) },
-];
-
 export default async function FinancePage() {
-  await requireAuth();
+  const session = await requireAuth();
+  const [invoiceTotals, paymentTotals, expenseTotals] = await Promise.all([
+    db.invoice.aggregate({ where: { ownerId: session.user.id }, _sum: { total: true, outstanding: true } }),
+    db.payment.aggregate({ _sum: { amount: true } }),
+    db.expense.aggregate({ _sum: { amount: true } }),
+  ]);
+  const incomeSummary = {
+    totalInvoiced: invoiceTotals._sum.total ?? 0,
+    totalReceived: paymentTotals._sum.amount ?? 0,
+    totalOutstanding: invoiceTotals._sum.outstanding ?? 0,
+    totalExpenses: expenseTotals._sum.amount ?? 0,
+  };
+  const metrics = [
+    { label: "Invoiced", value: formatCurrency(incomeSummary.totalInvoiced) },
+    { label: "Received", value: formatCurrency(incomeSummary.totalReceived) },
+    { label: "Outstanding", value: formatCurrency(incomeSummary.totalOutstanding) },
+    { label: "Expenses", value: formatCurrency(incomeSummary.totalExpenses) },
+    { label: "Net cash", value: formatCurrency(incomeSummary.totalReceived - incomeSummary.totalExpenses) },
+  ];
   return (
     <main className="p-8">
       <div className="mb-6">

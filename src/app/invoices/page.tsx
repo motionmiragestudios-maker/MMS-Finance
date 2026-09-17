@@ -1,8 +1,11 @@
-import { formatCurrency, invoices } from "@/lib/ui-data";
+import { db } from "@/lib/db";
+import { formatCurrency } from "@/lib/mock-data";
 import { requireAuth } from "@/lib/require-auth";
+import Link from "next/link";
 
 export default async function InvoicesPage() {
-  await requireAuth();
+  const session = await requireAuth();
+  const invoices = await db.invoice.findMany({ where: { ownerId: session.user.id }, include: { client: true }, orderBy: { invoiceDate: "desc" } });
   return (
     <main className="p-8">
       <div className="mb-6 flex items-center justify-between">
@@ -10,7 +13,7 @@ export default async function InvoicesPage() {
           <p className="text-sm uppercase tracking-[0.2em] text-slate-500">Records</p>
           <h1 className="text-3xl font-bold">Invoices</h1>
         </div>
-        <button className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">Create invoice</button>
+        <Link href="/" className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">Create invoice</Link>
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -29,8 +32,8 @@ export default async function InvoicesPage() {
               return (
                 <tr key={invoice.id} className="text-sm text-slate-700">
                   <td className="px-5 py-4 font-medium text-slate-900">{invoice.number}</td>
-                  <td className="px-5 py-4">Saved invoice</td>
-                  <td className="px-5 py-4">{invoice.invoiceDate}</td>
+                  <td className="px-5 py-4">{invoice.client.name}</td>
+                  <td className="px-5 py-4">{invoice.invoiceDate.toISOString().slice(0, 10)}</td>
                   <td className="px-5 py-4 font-medium">{formatCurrency(invoice.total)}</td>
                   <td className="px-5 py-4">
                     <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">

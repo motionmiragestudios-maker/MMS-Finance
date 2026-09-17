@@ -39,3 +39,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unable to create user. The email may already be in use." }, { status: 400 });
   }
 }
+
+export async function DELETE(request: Request) {
+  const session = await auth();
+  if (!session?.user?.id || session.user.role !== "owner") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  try {
+    const body = await request.json();
+    const id = typeof body.id === "string" ? body.id : "";
+    if (!id) return NextResponse.json({ error: "User id is required." }, { status: 400 });
+    if (id === session.user.id) return NextResponse.json({ error: "You cannot delete your own account." }, { status: 400 });
+
+    await db.user.delete({ where: { id } });
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("User deletion failed", error);
+    return NextResponse.json({ error: "Unable to delete this user. They may have linked invoices." }, { status: 400 });
+  }
+}
