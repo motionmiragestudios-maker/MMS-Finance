@@ -5,6 +5,7 @@ import Link from "next/link";
 import { defaultCompanyProfile, formatIndianPhone, normalizeIndianPhoneInput, workspaceKeys, type WorkspaceClient } from "@/lib/workspace";
 import type { CompanyProfile } from "@/types/finance";
 import { ToastNotification } from "@/components/toast-notification";
+import { UpiQr } from "@/components/upi-qr";
 
 type LineItem = { id: number; description: string; quantity: number; rate: number };
 
@@ -131,7 +132,7 @@ export function InvoiceBuilder() {
         <div className="invoice-meta"><div><span>Invoice number</span><strong>{invoiceNumber || "Not set"}</strong></div><div><span>Issue date</span><strong>{formatDate(invoiceDate)}</strong></div><div><span>Due date</span><strong>{formatDate(dueDate)}</strong></div></div>
         <div className="bill-to"><div className="block-label">Billed to</div><strong>{clientName || "Client name"}</strong><span>{clientAddress || "Billing address"}</span><span>{clientEmail || "billing@email.com"}</span>{selectedClient?.gst && <span>GST: {selectedClient.gst}</span>}</div>
         <div className="service-heading"><h3>Description of services</h3><span>{items.length} line{items.length === 1 ? "" : "s"}</span></div><table className="service-table"><thead><tr><th>Description</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead><tbody>{items.map((item) => <tr key={item.id}><td>{item.description || "Service description"}</td><td>{item.quantity}</td><td>{formatCurrency(item.rate)}</td><td>{formatCurrency(item.quantity * item.rate)}</td></tr>)}</tbody></table>
-        <div className="invoice-total"><span>Total due</span><strong>{formatCurrency(subtotal)}</strong></div><div className="invoice-footer"><div><div className="block-label">Payment note</div><p>{notes || "Add payment terms in the editor."}</p></div><div className="thank-you">Thank you<br /><strong>for your business.</strong></div></div>
+        <div className="invoice-total"><span>Total due</span><strong>{formatCurrency(subtotal)}</strong></div><div className="invoice-footer"><div><div className="block-label">Payment note</div><p>{notes || "Add payment terms in the editor."}</p></div><UpiQr upiId={company.upiDetails ?? ""} amount={subtotal} /><div className="thank-you">Thank you<br /><strong>for your business.</strong></div></div>
       </article></section>
     </div>
   );
