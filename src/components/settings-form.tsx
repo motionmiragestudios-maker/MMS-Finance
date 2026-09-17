@@ -10,9 +10,12 @@ export function SettingsForm() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    const storedProfile = localStorage.getItem(workspaceKeys.company);
-    setProfile(storedProfile ? { ...defaultCompanyProfile, ...JSON.parse(storedProfile) } : defaultCompanyProfile);
-    setLogo(localStorage.getItem(workspaceKeys.logo) ?? "");
+    const timer = window.setTimeout(() => {
+      const storedProfile = localStorage.getItem(workspaceKeys.company);
+      setProfile(storedProfile ? { ...defaultCompanyProfile, ...JSON.parse(storedProfile) } : defaultCompanyProfile);
+      setLogo(localStorage.getItem(workspaceKeys.logo) ?? "");
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   function update(field: keyof CompanyProfile, value: string) {

@@ -14,8 +14,11 @@ export function DirectoryManager({ kind }: DirectoryManagerProps) {
   const [form, setForm] = useState({ name: "", email: "", phone: "", address: "", gst: "", notes: "" });
 
   useEffect(() => {
-    const stored = localStorage.getItem(storageKey);
-    if (stored) setRecords(JSON.parse(stored));
+    const timer = window.setTimeout(() => {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) setRecords(JSON.parse(stored));
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [storageKey]);
 
   function update(field: keyof typeof form, value: string) { setForm((current) => ({ ...current, [field]: value })); }

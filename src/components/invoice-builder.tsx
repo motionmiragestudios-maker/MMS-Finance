@@ -27,15 +27,19 @@ export function InvoiceBuilder() {
   const [items, setItems] = useState<LineItem[]>([emptyItem()]);
 
   useEffect(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    const storedCompany = localStorage.getItem(workspaceKeys.company);
-    const storedLogo = localStorage.getItem(workspaceKeys.logo);
-    const storedClients = localStorage.getItem(workspaceKeys.clients);
-    setCompany(storedCompany ? { ...defaultCompanyProfile, ...JSON.parse(storedCompany) } : defaultCompanyProfile);
-    setLogo(storedLogo ?? "");
-    setClients(storedClients ? JSON.parse(storedClients) : []);
-    setInvoiceDate(today);
-    setNotes(storedCompany ? JSON.parse(storedCompany).invoiceNotes ?? "" : defaultCompanyProfile.invoiceNotes);
+    const timer = window.setTimeout(() => {
+      const today = new Date().toISOString().slice(0, 10);
+      const storedCompany = localStorage.getItem(workspaceKeys.company);
+      const storedLogo = localStorage.getItem(workspaceKeys.logo);
+      const storedClients = localStorage.getItem(workspaceKeys.clients);
+      const parsedCompany = storedCompany ? JSON.parse(storedCompany) : defaultCompanyProfile;
+      setCompany({ ...defaultCompanyProfile, ...parsedCompany });
+      setLogo(storedLogo ?? "");
+      setClients(storedClients ? JSON.parse(storedClients) : []);
+      setInvoiceDate(today);
+      setNotes(parsedCompany.invoiceNotes ?? defaultCompanyProfile.invoiceNotes);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   const subtotal = items.reduce((total, item) => total + item.quantity * item.rate, 0);
