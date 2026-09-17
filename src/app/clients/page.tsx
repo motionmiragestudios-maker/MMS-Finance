@@ -1,6 +1,8 @@
 import { clients, formatCurrency } from "@/lib/mock-data";
+import { requireAuth } from "@/lib/require-auth";
 
-export default function ClientsPage() {
+export default async function ClientsPage() {
+  await requireAuth();
   return (
     <main className="p-8">
       <div className="mb-6 flex items-center justify-between">

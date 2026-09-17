@@ -1,6 +1,8 @@
 import { formatCurrency, payments } from "@/lib/mock-data";
+import { requireAuth } from "@/lib/require-auth";
 
-export default function PaymentsPage() {
+export default async function PaymentsPage() {
+  await requireAuth();
   return (
     <main className="p-8">
       <div className="mb-6 flex items-center justify-between">

@@ -1,4 +1,5 @@
 import { formatCurrency, incomeSummary } from "@/lib/mock-data";
+import { requireAuth } from "@/lib/require-auth";
 
 const metrics = [
   { label: "Invoiced", value: formatCurrency(incomeSummary.totalInvoiced) },
@@ -8,7 +9,8 @@ const metrics = [
   { label: "Net cash", value: formatCurrency(incomeSummary.netCashResult) },
 ];
 
-export default function FinancePage() {
+export default async function FinancePage() {
+  await requireAuth();
   return (
     <main className="p-8">
       <div className="mb-6">

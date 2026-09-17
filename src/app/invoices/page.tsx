@@ -1,6 +1,8 @@
 import { clients, formatCurrency, invoices } from "@/lib/mock-data";
+import { requireAuth } from "@/lib/require-auth";
 
-export default function InvoicesPage() {
+export default async function InvoicesPage() {
+  await requireAuth();
   return (
     <main className="p-8">
       <div className="mb-6 flex items-center justify-between">

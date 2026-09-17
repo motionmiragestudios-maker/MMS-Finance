@@ -1,4 +1,7 @@
-export default function ProfilePage() {
+import { requireAuth } from "@/lib/require-auth";
+
+export default async function ProfilePage() {
+  await requireAuth();
   return (
     <main className="p-8">
       <div className="mb-6">

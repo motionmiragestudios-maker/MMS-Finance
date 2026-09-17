@@ -1,6 +1,8 @@
 import { companyProfile } from "@/lib/mock-data";
+import { requireAuth } from "@/lib/require-auth";
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  await requireAuth();
   return (
     <main className="p-8">
       <div className="mb-6">

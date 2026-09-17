@@ -1,6 +1,8 @@
 import { projects } from "@/lib/mock-data";
+import { requireAuth } from "@/lib/require-auth";
 
-export default function ProjectsPage() {
+export default async function ProjectsPage() {
+  await requireAuth();
   return (
     <main className="p-8">
       <div className="mb-6 flex items-center justify-between">

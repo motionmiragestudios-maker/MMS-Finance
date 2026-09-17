@@ -1,6 +1,8 @@
 import { expenses, formatCurrency } from "@/lib/mock-data";
+import { requireAuth } from "@/lib/require-auth";
 
-export default function ExpensesPage() {
+export default async function ExpensesPage() {
+  await requireAuth();
   return (
     <main className="p-8">
       <div className="mb-6 flex items-center justify-between">
