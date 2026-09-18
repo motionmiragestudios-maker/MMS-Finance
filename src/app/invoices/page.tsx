@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { formatCurrency } from "@/lib/mock-data";
 import { requireAuth } from "@/lib/require-auth";
+import { InvoiceTableActions } from "@/components/invoice-table-actions";
 import Link from "next/link";
 
 export default async function InvoicesPage() {
@@ -13,7 +14,7 @@ export default async function InvoicesPage() {
           <p className="text-sm uppercase tracking-[0.2em] text-slate-500">Records</p>
           <h1 className="text-3xl font-bold">Invoices</h1>
         </div>
-        <Link href="/" className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">Create invoice</Link>
+        <Link href="/" className="primary-button">Create invoice</Link>
       </div>
 
       <div className="invoice-table-wrap overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -41,7 +42,7 @@ export default async function InvoicesPage() {
                       {invoice.status}
                     </span>
                   </td>
-                  <td className="px-5 py-4"><div className="invoice-table-actions"><Link href={`/invoices/${invoice.id}`} aria-label={`View ${invoice.number}`} title="View invoice">View</Link><Link href={`/create-invoice?edit=${invoice.id}`} aria-label={`Edit ${invoice.number}`} title="Edit invoice">Edit</Link><Link href={`/invoices/${invoice.id}#print`} aria-label={`Download ${invoice.number}`} title="Download invoice">PDF</Link></div></td>
+                  <td className="px-5 py-4"><InvoiceTableActions invoiceId={invoice.id} invoiceNumber={invoice.number} /></td>
                 </tr>
               );
             })}
