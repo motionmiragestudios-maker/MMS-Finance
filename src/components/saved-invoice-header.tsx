@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { defaultCompanyProfile, workspaceKeys } from "@/lib/workspace";
 import type { CompanyProfile } from "@/types/finance";
 
-type SavedInvoiceHeaderProps = { fallbackUpi?: string };
+type SavedInvoiceHeaderProps = { fallbackUpi?: string; documentLabel?: string };
 
-export function SavedInvoiceHeader({ fallbackUpi }: SavedInvoiceHeaderProps) {
+export function SavedInvoiceHeader({ fallbackUpi, documentLabel = "INVOICE" }: SavedInvoiceHeaderProps) {
   const [company, setCompany] = useState<CompanyProfile>(defaultCompanyProfile);
   const [logo, setLogo] = useState("");
 
@@ -26,5 +26,5 @@ export function SavedInvoiceHeader({ fallbackUpi }: SavedInvoiceHeaderProps) {
     };
   }, [fallbackUpi]);
 
-  return <header className="invoice-header"><div><h2>INVOICE</h2><div className="company-details"><strong>{company.name}</strong><span>{company.tagline}</span><span>{company.address || "Company address"}</span><span>{company.phone && `Phone: ${company.phone}`}</span><span>{company.email && `Email: ${company.email}`}</span><span>{company.website}</span></div></div>{logo ? <img className="invoice-logo" src={logo} alt={`${company.name} logo`} /> : <div className="brand-mark"><span>MOTION</span><b>MIRAGE</b><small>STUDIOS</small></div>}</header>;
+  return <header className="invoice-header"><div><h2>{documentLabel}</h2><div className="company-details"><strong>{company.name}</strong><span>{company.tagline}</span><span>{company.address || "Company address"}</span><span>{company.phone && `Phone: ${company.phone}`}</span><span>{company.email && `Email: ${company.email}`}</span><span>{company.website}</span></div></div>{logo ? <img className="invoice-logo" src={logo} alt={`${company.name} logo`} /> : <div className="brand-mark"><span>MOTION</span><b>MIRAGE</b><small>STUDIOS</small></div>}</header>;
 }
