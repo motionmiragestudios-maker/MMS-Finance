@@ -8,9 +8,9 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const invoiceId = typeof body.invoiceId === "string" ? body.invoiceId : "";
-    const invoice = await db.invoice.findUnique({ where: { id: invoiceId } });
+    const invoice = await db.invoice.findFirst({ where: { id: invoiceId, ownerId: session.user.id } });
     const amount = Number(body.amount);
-    if (!invoice || !Number.isInteger(amount) || amount <= 0 || !body.date) return NextResponse.json({ error: "Choose an invoice, valid amount, and date." }, { status: 400 });
+    if (!invoice || !Number.isInteger(amount) || amount <= 0 || !body.date || amount > invoice.outstanding) return NextResponse.json({ error: "Choose an invoice, valid amount, date, and do not exceed the outstanding balance." }, { status: 400 });
     const payment = await db.payment.create({ data: {
       id: `pay-${crypto.randomUUID()}`, invoiceId, clientId: invoice.clientId, projectId: typeof body.projectId === "string" && body.projectId ? body.projectId : invoice.projectId,
       amount, date: new Date(`${body.date}T00:00:00.000Z`), method: typeof body.method === "string" ? body.method : "Bank Transfer", reference: typeof body.reference === "string" ? body.reference.trim() : "", notes: typeof body.notes === "string" ? body.notes.trim() : "",

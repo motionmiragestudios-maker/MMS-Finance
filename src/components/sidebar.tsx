@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 
 const navItems = [
   { label: "Create invoice", href: "/" },
@@ -37,7 +38,7 @@ export function Sidebar() {
           </Link>
         ))}
       </nav>
-      <div className="sidebar-footer"><span className="status-dot" />Workspace online</div>
+      <div className="sidebar-footer"><span className="status-dot" />Workspace online<button className="sidebar-logout" type="button" onClick={() => void signOut({ callbackUrl: "/login" })}>Log out</button></div>
     </aside>
   );
 }

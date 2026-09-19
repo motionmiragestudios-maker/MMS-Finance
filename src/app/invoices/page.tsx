@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { formatCurrency } from "@/lib/mock-data";
 import { requireAuth } from "@/lib/require-auth";
 import { InvoiceTableActions } from "@/components/invoice-table-actions";
+import { InvoicePaymentButton } from "@/components/invoice-payment-button";
 import Link from "next/link";
 
 export default async function InvoicesPage() {
@@ -42,7 +43,7 @@ export default async function InvoicesPage() {
                       {invoice.status}
                     </span>
                   </td>
-                  <td className="px-5 py-4"><InvoiceTableActions invoiceId={invoice.id} invoiceNumber={invoice.number} /></td>
+                  <td className="px-5 py-4"><div className="invoice-row-actions"><InvoicePaymentButton invoiceId={invoice.id} invoiceNumber={invoice.number} outstanding={invoice.outstanding} /><InvoiceTableActions invoiceId={invoice.id} invoiceNumber={invoice.number} /></div></td>
                 </tr>
               );
             })}
