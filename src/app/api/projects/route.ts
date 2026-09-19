@@ -20,3 +20,30 @@ export async function POST(request: Request) {
     return NextResponse.json(project, { status: 201 });
   } catch { return NextResponse.json({ error: "Unable to create project." }, { status: 400 }); }
 }
+
+export async function DELETE(request: Request) {
+  const session = await auth();
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const id = new URL(request.url).searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "Quotation id is required." }, { status: 400 });
+
+  try {
+    await db.$transaction(async (transaction) => {
+      const project = await transaction.project.findUnique({ where: { id }, select: { id: true } });
+      if (!project) throw new Error("not-found");
+      const invoices = await transaction.invoice.findMany({ where: { projectId: id }, select: { id: true } });
+      const invoiceIds = invoices.map((invoice) => invoice.id);
+      if (invoiceIds.length) {
+        await transaction.payment.deleteMany({ where: { invoiceId: { in: invoiceIds } } });
+        await transaction.invoiceItem.deleteMany({ where: { invoiceId: { in: invoiceIds } } });
+        await transaction.invoice.deleteMany({ where: { id: { in: invoiceIds } } });
+      }
+      await transaction.payment.deleteMany({ where: { projectId: id } });
+      await transaction.expense.deleteMany({ where: { projectId: id } });
+      await transaction.project.delete({ where: { id } });
+    });
+    return NextResponse.json({ ok: true });
+  } catch {
+    return NextResponse.json({ error: "Unable to delete this quotation." }, { status: 400 });
+  }
+}

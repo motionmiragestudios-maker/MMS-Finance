@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/require-auth";
 import { FinanceRecordForm } from "@/components/finance-record-form";
 import Link from "next/link";
+import { QuotationActions } from "@/components/quotation-actions";
 
 export default async function ProjectsPage() {
   await requireAuth();
@@ -28,7 +29,7 @@ export default async function ProjectsPage() {
                 <h2 className="text-xl font-semibold text-slate-900">{project.name}</h2>
                 <p className="text-sm text-slate-500">{project.client.name} · {project.description || "Quotation without description"}</p>
               </div>
-              <div className="record-actions"><Link className="secondary-button" href={`/projects/${project.id}`}>View quotation</Link><span className="inline-flex rounded-full bg-indigo-100 px-2 py-1 text-[10px] font-medium text-indigo-700">{project.status.replace(/([a-z])([A-Z])/g, "$1 $2")}</span></div>
+              <div className="record-actions"><Link className="secondary-button" href={`/projects/${project.id}`}>View quotation</Link><QuotationActions quotationId={project.id} showPrint={false} /><span className="inline-flex rounded-full bg-indigo-100 px-2 py-1 text-[10px] font-medium text-indigo-700">{project.status.replace(/([a-z])([A-Z])/g, "$1 $2")}</span></div>
             </div>
 
             <div className="mt-4 grid gap-4 md:grid-cols-4 text-sm text-slate-600">
