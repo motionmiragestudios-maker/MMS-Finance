@@ -15,19 +15,24 @@ export default function LoginPage() {
     setIsLoading(true);
 
     const formData = new FormData(event.currentTarget);
-    const result = await signIn("credentials", {
-      email: formData.get("email"),
-      password: formData.get("password"),
-      redirect: false,
-    });
+    try {
+      const result = await signIn("credentials", {
+        email: formData.get("email"),
+        password: formData.get("password"),
+        redirect: false,
+      });
 
-    if (result?.error) {
-      setError("The email or password is incorrect.");
+      if (result?.error) {
+        setError("The email or password is incorrect.");
+        return;
+      }
+
+      router.push("/");
+    } catch {
+      setError("Unable to sign in right now. Please try again later.");
+    } finally {
       setIsLoading(false);
-      return;
     }
-
-    router.push("/");
   }
 
   return (
