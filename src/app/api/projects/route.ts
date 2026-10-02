@@ -37,22 +37,11 @@ export async function DELETE(request: Request) {
   if (!id) return NextResponse.json({ error: "Quotation id is required." }, { status: 400 });
 
   try {
-    await db.$transaction(async (transaction) => {
-      const project = await transaction.project.findUnique({ where: { id }, select: { id: true } });
-      if (!project) throw new Error("not-found");
-      const invoices = await transaction.invoice.findMany({ where: { projectId: id }, select: { id: true } });
-      const invoiceIds = invoices.map((invoice) => invoice.id);
-      if (invoiceIds.length) {
-        await transaction.payment.deleteMany({ where: { invoiceId: { in: invoiceIds } } });
-        await transaction.invoiceItem.deleteMany({ where: { invoiceId: { in: invoiceIds } } });
-        await transaction.invoice.deleteMany({ where: { id: { in: invoiceIds } } });
-      }
-      await transaction.payment.deleteMany({ where: { projectId: id } });
-      await transaction.expense.deleteMany({ where: { projectId: id } });
-      await transaction.project.delete({ where: { id } });
-    });
+    const { count } = await db.project.deleteMany({ where: { id } });
+    if (!count) return NextResponse.json({ error: "Quotation not found." }, { status: 404 });
     return NextResponse.json({ ok: true });
-  } catch {
+  } catch (error) {
+    console.error("Quotation deletion failed", error);
     return NextResponse.json({ error: "Unable to delete this quotation." }, { status: 400 });
   }
 }

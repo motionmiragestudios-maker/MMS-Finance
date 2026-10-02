@@ -9,7 +9,13 @@ import Link from "next/link";
 
 export default async function InvoicesPage() {
   const session = await requireAuth();
-  const invoices = await db.invoice.findMany({ include: { client: true }, orderBy: { invoiceDate: "desc" } });
+  const invoices = await db.invoice.findMany({
+    select: {
+      id: true, number: true, invoiceDate: true, status: true, total: true, outstanding: true,
+      client: { select: { id: true, name: true, email: true } },
+    },
+    orderBy: { invoiceDate: "desc" },
+  });
   const canManage = canManageRecords(session.user.role);
   const columns = [
     { key: "invoice", label: "Invoice" }, { key: "client", label: "Client" }, { key: "date", label: "Date" },

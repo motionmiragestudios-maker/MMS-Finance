@@ -70,29 +70,12 @@ export async function DELETE(request: Request) {
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!canManageRecords(session.user.role)) return NextResponse.json({ error: "Your role cannot delete clients." }, { status: 403 });
   try {
-    const { id } = await request.json();
-    const client = await db.client.findUnique({ where: { id }, select: { id: true } });
-    if (!client) return NextResponse.json({ error: "Client not found." }, { status: 404 });
+    const body = await request.json();
+    const id = typeof body.id === "string" ? body.id : "";
+    if (!id) return NextResponse.json({ error: "Client id is required." }, { status: 400 });
 
-    await db.$transaction(async (transaction) => {
-      const projects = await transaction.project.findMany({ where: { clientId: id }, select: { id: true } });
-      const projectIds = projects.map((project) => project.id);
-      const invoices = await transaction.invoice.findMany({ where: { clientId: id }, select: { id: true } });
-      const invoiceIds = invoices.map((invoice) => invoice.id);
-
-      if (projectIds.length) {
-        await transaction.expense.deleteMany({ where: { projectId: { in: projectIds } } });
-        await transaction.payment.deleteMany({ where: { projectId: { in: projectIds } } });
-      }
-      if (invoiceIds.length) {
-        await transaction.payment.deleteMany({ where: { invoiceId: { in: invoiceIds } } });
-        await transaction.invoiceItem.deleteMany({ where: { invoiceId: { in: invoiceIds } } });
-      }
-      await transaction.payment.deleteMany({ where: { clientId: id } });
-      await transaction.invoice.deleteMany({ where: { clientId: id } });
-      await transaction.project.deleteMany({ where: { clientId: id } });
-      await transaction.client.delete({ where: { id } });
-    });
+    const { count } = await db.client.deleteMany({ where: { id } });
+    if (!count) return NextResponse.json({ error: "Client not found." }, { status: 404 });
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("Client deletion failed", error);

@@ -35,11 +35,19 @@ npm run db:seed
 ## First-time private setup
 
 1. Copy `.env.example` to `.env.local` and set a strong `AUTH_SECRET`, `AUTH_ADMIN_EMAIL`, and temporary `AUTH_ADMIN_PASSWORD`.
-2. Set `DATABASE_URL` to a reachable PostgreSQL database.
+2. Set `DATABASE_URL` to the runtime PostgreSQL connection string. Set `DIRECT_URL` to the database's direct (non-pooled) connection string for schema changes; for local development, both can use the same URL.
 3. Run `npm run db:generate`, `npm run db:push`, and `npm run db:seed`.
 4. After seeding, remove `AUTH_ADMIN_PASSWORD` and keep only a generated `AUTH_ADMIN_PASSWORD_HASH` in production.
 5. Open `/login`. Unauthenticated visitors are redirected there; invoice creation and saving require a valid session.
 6. Configure `RESEND_API_KEY` and a verified `SMTP_FROM` sender to deliver account setup and password reset emails.
+
+## Deployment performance
+
+- Keep the application server and PostgreSQL database in the same region where possible. If the application is deployed in Warsaw, a database in a distant region will still add network latency to every request.
+- Set `DIRECT_URL` in the deployment environment to the PostgreSQL direct/non-pooled connection string. Keep `DATABASE_URL` pointed at the runtime connection pool if the hosting provider supplies one. Prisma uses `DIRECT_URL` for schema operations such as `npm run db:push`, avoiding connection limits on Supabase's session pooler.
+- For Supabase deployments, runtime connections use the Transaction pooler (port `6543`) instead of the Session pooler (port `5432`). The app switches Supabase pooler URLs to port `6543`, limits each Prisma client to one connection, and enables PgBouncer compatibility; use the direct connection URL for `DIRECT_URL`.
+- Apply schema changes to the production database with `npm run db:push` before deploying application changes that depend on them. The database indexes and cascading delete rules are required for the optimized list and delete paths.
+- The production build runs `prisma generate` before `next build` so the Prisma Client types always match `prisma/schema.prisma`, including when the deployment platform restores a cached generated client.
 
 ## Workspace workflow
 

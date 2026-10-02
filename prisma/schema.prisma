@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum InvoiceStatus {
@@ -129,12 +130,15 @@ model Project {
   status           ProjectStatus
   billingStatus    InvoiceStatus
   notes            String
-  client           Client         @relation(fields: [clientId], references: [id])
+  client           Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
   invoices         Invoice[]
   payments         Payment[]
   expenses         Expense[]
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
+
+  @@index([clientId])
+  @@index([shootDate])
 }
 
 model Invoice {
@@ -154,12 +158,17 @@ model Invoice {
   outstanding Int
   notes       String
   owner       User          @relation(fields: [ownerId], references: [id])
-  client      Client        @relation(fields: [clientId], references: [id])
-  project     Project?       @relation(fields: [projectId], references: [id])
+  client      Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  project     Project?       @relation(fields: [projectId], references: [id], onDelete: Cascade)
   items       InvoiceItem[]
   payments    Payment[]
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
+
+  @@index([clientId, invoiceDate])
+  @@index([ownerId])
+  @@index([projectId])
+  @@index([invoiceDate])
 }
 
 model InvoiceItem {
@@ -171,6 +180,8 @@ model InvoiceItem {
   discount    Int
   tax         Int
   invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
 }
 
 model Payment {
@@ -183,10 +194,15 @@ model Payment {
   method    String
   reference String
   notes     String
-  invoice   Invoice  @relation(fields: [invoiceId], references: [id])
-  client    Client   @relation(fields: [clientId], references: [id])
-  project   Project? @relation(fields: [projectId], references: [id])
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+
+  @@index([clientId])
+  @@index([date])
+  @@index([invoiceId])
+  @@index([projectId])
 }
 
 model Expense {
@@ -199,6 +215,9 @@ model Expense {
   method    String
   reference String
   notes     String
-  project   Project?  @relation(fields: [projectId], references: [id])
+  project   Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   createdAt DateTime  @default(now())
+
+  @@index([date])
+  @@index([projectId])
 }

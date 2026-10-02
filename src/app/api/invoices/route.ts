@@ -50,15 +50,13 @@ export async function DELETE(request: Request) {
   const id = new URL(request.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Invoice id is required." }, { status: 400 });
   try {
-    await db.$transaction(async (transaction) => {
-      const invoice = await transaction.invoice.findUnique({ where: { id }, select: { id: true } });
-      if (!invoice) throw new Error("not-found");
-      await transaction.payment.deleteMany({ where: { invoiceId: id } });
-      await transaction.invoiceItem.deleteMany({ where: { invoiceId: id } });
-      await transaction.invoice.delete({ where: { id } });
-    });
+    const { count } = await db.invoice.deleteMany({ where: { id } });
+    if (!count) return NextResponse.json({ error: "Invoice not found." }, { status: 404 });
     return NextResponse.json({ ok: true });
-  } catch { return NextResponse.json({ error: "Unable to delete invoice." }, { status: 400 }); }
+  } catch (error) {
+    console.error("Invoice deletion failed", error);
+    return NextResponse.json({ error: "Unable to delete invoice." }, { status: 400 });
+  }
 }
 
 export async function POST(request: Request) {

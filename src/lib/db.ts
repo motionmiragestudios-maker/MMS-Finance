@@ -10,7 +10,14 @@ if (!databaseUrl) {
   throw new Error("Missing DATABASE_URL. Set it in your environment manager or .env.local; never store DB credentials in app code.");
 }
 
-process.env.DATABASE_URL = databaseUrl;
+const runtimeDatabaseUrl = new URL(databaseUrl);
+if (runtimeDatabaseUrl.hostname.endsWith(".pooler.supabase.com")) {
+  runtimeDatabaseUrl.searchParams.set("connection_limit", "1");
+  if (runtimeDatabaseUrl.port === "5432") runtimeDatabaseUrl.port = "6543";
+  runtimeDatabaseUrl.searchParams.set("pgbouncer", "true");
+}
+
+process.env.DATABASE_URL = runtimeDatabaseUrl.toString();
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 

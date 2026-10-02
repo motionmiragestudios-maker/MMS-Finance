@@ -3,20 +3,22 @@ import { requireAuth } from "@/lib/require-auth";
 import { FinanceRecordForm } from "@/components/finance-record-form";
 import Link from "next/link";
 import { QuotationActions } from "@/components/quotation-actions";
-import { assignQuotationNumber } from "@/lib/quotation-numbers";
 import { canManageRecords } from "@/lib/user-roles";
 import { SearchableTable, type SearchableTableRow } from "@/components/searchable-table";
 
 export default async function ProjectsPage() {
   const session = await requireAuth();
   const [projects, clients] = await Promise.all([
-    db.project.findMany({ include: { client: true }, orderBy: { shootDate: "asc" } }),
+    db.project.findMany({
+      select: {
+        id: true, quotationNumber: true, name: true, description: true, startDate: true,
+        deliveryDate: true, quotationAmount: true, status: true,
+        client: { select: { name: true } },
+      },
+      orderBy: { shootDate: "asc" },
+    }),
     db.client.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
   ]);
-  const quotationNumbers = new Map<string, string>();
-  for (const project of projects) {
-    quotationNumbers.set(project.id, project.quotationNumber ?? await assignQuotationNumber(project.id) ?? "Not assigned");
-  }
   const canManage = canManageRecords(session.user.role);
   const columns = [
     { key: "number", label: "Quotation" }, { key: "name", label: "Title" }, { key: "client", label: "Client" },
@@ -24,7 +26,7 @@ export default async function ProjectsPage() {
     { key: "status", label: "Status" }, { key: "actions", label: "Actions" },
   ];
   const rows: SearchableTableRow[] = projects.map((project) => {
-    const number = quotationNumbers.get(project.id) ?? "Not assigned";
+    const number = project.quotationNumber ?? "Not assigned";
     const status = project.status.replace(/([a-z])([A-Z])/g, "$1 $2");
     const date = project.startDate.toISOString().slice(0, 10);
     const validUntil = project.deliveryDate.toISOString().slice(0, 10);

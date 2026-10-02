@@ -7,7 +7,13 @@ import { canManageRecords } from "@/lib/user-roles";
 export default async function PaymentsPage() {
   const session = await requireAuth();
   const [payments, invoices] = await Promise.all([
-    db.payment.findMany({ include: { client: true, invoice: true, project: true }, orderBy: { date: "desc" } }),
+    db.payment.findMany({
+      select: {
+        id: true, amount: true, reference: true, method: true, date: true,
+        client: { select: { name: true } },
+      },
+      orderBy: { date: "desc" },
+    }),
     db.invoice.findMany({ select: { id: true, number: true }, orderBy: { invoiceDate: "desc" } }),
   ]);
   return (
