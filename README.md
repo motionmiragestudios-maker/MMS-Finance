@@ -61,5 +61,6 @@ npm run db:seed
 - Use **Clients** to open a client account and review its billing history. Create invoices from the client account or invoice builder.
 - Use **Payments** and **Expenses** to record operational activity and update or remove records with confirmation.
 - Invoice deletion also removes its line items and linked payments after confirmation.
+- New invoices use the annual sequence format `INV-YY-###` (for example, `INV-26-001`); previously saved invoice numbers are left unchanged.
 
 Do not commit `.env` or expose database passwords. Rotate any database credentials that have been shared outside the local machine.

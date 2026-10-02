@@ -9,9 +9,8 @@ function isValidDate(value: unknown) {
 }
 
 async function nextInvoiceNumber(invoiceDate: Date) {
-  const month = String(invoiceDate.getUTCMonth() + 1).padStart(2, "0");
-  const year = invoiceDate.getUTCFullYear();
-  const prefix = `MMS-INV-${month}-${year}-`;
+  const year = String(invoiceDate.getUTCFullYear()).slice(-2);
+  const prefix = `INV-${year}-`;
   const invoices = await db.invoice.findMany({ where: { number: { startsWith: prefix } }, select: { number: true } });
   const highest = invoices.reduce((max, invoice) => {
     const sequence = Number(invoice.number.slice(prefix.length));
