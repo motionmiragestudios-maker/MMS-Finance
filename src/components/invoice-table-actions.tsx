@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ToastNotification } from "@/components/toast-notification";
 
-export function InvoiceTableActions({ invoiceId, invoiceNumber }: { invoiceId: string; invoiceNumber: string }) {
+export function InvoiceTableActions({ invoiceId, invoiceNumber, canManage }: { invoiceId: string; invoiceNumber: string; canManage: boolean }) {
   const [confirming, setConfirming] = useState(false);
   const [message, setMessage] = useState("");
   const router = useRouter();
@@ -35,9 +35,9 @@ export function InvoiceTableActions({ invoiceId, invoiceNumber }: { invoiceId: s
     </div>}
     <div className="invoice-table-actions">
       <Link href={`/invoices/${invoiceId}`} aria-label={`View ${invoiceNumber}`} title="View invoice">View</Link>
-      <Link href={`/create-invoice?edit=${invoiceId}`} aria-label={`Edit ${invoiceNumber}`} title="Edit invoice">Edit</Link>
       <Link href={`/invoices/${invoiceId}#print`} aria-label={`Download ${invoiceNumber}`} title="Download invoice">PDF</Link>
-      <button className="table-delete-button" type="button" onClick={() => setConfirming(true)}>Delete</button>
+      {canManage && <Link href={`/create-invoice?edit=${invoiceId}`} aria-label={`Edit ${invoiceNumber}`} title="Edit invoice">Edit</Link>}
+      {canManage && <button className="table-delete-button" type="button" onClick={() => setConfirming(true)}>Delete</button>}
     </div>
   </>;
 }

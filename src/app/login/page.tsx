@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
+import { BrandWordmark } from "@/components/brand-wordmark";
 
 export default function LoginPage() {
   const [error, setError] = useState("");
@@ -38,11 +39,11 @@ export default function LoginPage() {
   return (
     <main className="login-page">
       <div className="login-card">
-        <div className="login-brand"><span>MOTION</span><strong>MIRAGE</strong><small>STUDIOS</small></div>
+        <BrandWordmark />
         <p className="eyebrow">Private workspace</p>
         <h1>Welcome back</h1>
         <p className="muted">Sign in to create and manage your studio invoices.</p>
-        <form onSubmit={handleSubmit} className="login-form">
+        <form onSubmit={handleSubmit} method="post" className="login-form">
           <label>Email address<input name="email" type="email" autoComplete="email" required /></label>
           <label>Password<input name="password" type="password" autoComplete="current-password" required /></label>
           {error && <p className="login-error" role="alert">{error}</p>}

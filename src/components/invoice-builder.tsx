@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { defaultCompanyProfile, formatIndianPhone, normalizeIndianPhoneInput, workspaceKeys, type WorkspaceClient } from "@/lib/workspace";
+import { defaultCompanyProfile, formatIndianPhone, loadSharedCompanyProfile, normalizeIndianPhoneInput, type WorkspaceClient } from "@/lib/workspace";
 import type { CompanyProfile } from "@/types/finance";
 import { ToastNotification } from "@/components/toast-notification";
 import { InvoicePaymentDetails } from "@/components/invoice-payment-details";
@@ -39,12 +39,10 @@ export function InvoiceBuilder() {
       const today = new Date().toISOString().slice(0, 10);
       const editId = new URLSearchParams(window.location.search).get("edit") ?? "";
       setEditingInvoiceId(editId);
-      const storedCompany = localStorage.getItem(workspaceKeys.company);
-      const storedLogo = localStorage.getItem(workspaceKeys.logo);
-      const parsedCompany = storedCompany ? JSON.parse(storedCompany) : defaultCompanyProfile;
+      const [shared, clientsResponse] = await Promise.all([loadSharedCompanyProfile(), fetch("/api/clients")]);
+      const parsedCompany = shared?.profile ?? defaultCompanyProfile;
       setCompany({ ...defaultCompanyProfile, ...parsedCompany });
-      setLogo(storedLogo ?? "");
-      const clientsResponse = await fetch("/api/clients");
+      setLogo(shared?.logoData ?? "");
       if (clientsResponse.ok) setClients(await clientsResponse.json());
       setInvoiceDate(today);
       setDueDate(addDays(today, 27));
@@ -56,7 +54,7 @@ export function InvoiceBuilder() {
           setInvoiceNumber(invoice.number); setInvoiceDate(invoice.invoiceDate.slice(0, 10)); setDueDate(invoice.dueDate.slice(0, 10)); setClientId(invoice.clientId); setClientName(invoice.client.name); setClientEmail(invoice.client.email); setClientPhone(normalizeIndianPhoneInput(invoice.client.phone)); setClientAddress(invoice.client.billingAddress); setNotes(invoice.notes); setItems(invoice.items.map((item: { id: string; description: string; quantity: number; rate: number }) => ({ id: Number(item.id) || Date.now(), description: item.description, quantity: item.quantity, rate: item.rate })));
         }
       } else {
-        const numberResponse = await fetch("/api/invoices?nextNumber=1");
+        const numberResponse = await fetch(`/api/invoices?nextNumber=1&date=${today}`);
         if (numberResponse.ok) setInvoiceNumber((await numberResponse.json()).invoiceNumber);
       }
     }, 0);
@@ -64,12 +62,14 @@ export function InvoiceBuilder() {
   }, []);
 
   useEffect(() => {
-    const refreshLogo = () => setLogo(localStorage.getItem(workspaceKeys.logo) ?? "");
+    const refreshLogo = async () => {
+      const shared = await loadSharedCompanyProfile();
+      setLogo(shared?.logoData ?? "");
+      if (shared) setCompany({ ...defaultCompanyProfile, ...shared.profile });
+    };
     window.addEventListener("motion-mirage-logo-updated", refreshLogo);
-    window.addEventListener("storage", refreshLogo);
     return () => {
       window.removeEventListener("motion-mirage-logo-updated", refreshLogo);
-      window.removeEventListener("storage", refreshLogo);
     };
   }, []);
 
@@ -118,7 +118,7 @@ export function InvoiceBuilder() {
         </div>
         {saveMessage && <ToastNotification message={saveMessage} onDismiss={() => setSaveMessage("")} />}
 
-        <div className="editor-section"><div className="section-heading"><span>01</span><h2>Invoice details</h2></div><div className="form-grid three-columns"><label>Invoice number<input placeholder="e.g. MMS-INV-2026-001" value={invoiceNumber} onChange={(event) => setInvoiceNumber(event.target.value)} /></label><label>Issue date<input type="date" value={invoiceDate} onChange={(event) => { const value = event.target.value; setInvoiceDate(value); if (autoDueDate && value) setDueDate(addDays(value, 27)); }} /></label><label>Due date<input type="date" disabled={autoDueDate} value={dueDate} onChange={(event) => setDueDate(event.target.value)} /><span className="date-option"><input type="checkbox" checked={autoDueDate} onChange={(event) => { const checked = event.target.checked; setAutoDueDate(checked); if (checked && invoiceDate) setDueDate(addDays(invoiceDate, 27)); }} /> Auto-calculate 28-day due date</span></label></div></div>
+        <div className="editor-section"><div className="section-heading"><span>01</span><h2>Invoice details</h2></div><div className="form-grid three-columns"><label>Invoice number<input readOnly placeholder="MMS-INV-MM-YYYY-001" value={invoiceNumber} /></label><label>Issue date<input type="date" value={invoiceDate} onChange={async (event) => { const value = event.target.value; setInvoiceDate(value); if (autoDueDate && value) setDueDate(addDays(value, 27)); if (!editingInvoiceId && value) { const response = await fetch(`/api/invoices?nextNumber=1&date=${value}`); if (response.ok) setInvoiceNumber((await response.json()).invoiceNumber); } }} /></label><label>Due date<input type="date" disabled={autoDueDate} value={dueDate} onChange={(event) => setDueDate(event.target.value)} /><span className="date-option"><input type="checkbox" checked={autoDueDate} onChange={(event) => { const checked = event.target.checked; setAutoDueDate(checked); if (checked && invoiceDate) setDueDate(addDays(invoiceDate, 27)); }} /> Auto-calculate 28-day due date</span></label></div></div>
 
         <div className="editor-section"><div className="section-heading"><span>02</span><h2>Bill to</h2><Link className="text-button" href="/clients">Manage clients</Link></div><div className="form-grid two-columns"><label>Saved client<select value={clientId} onChange={(event) => updateClient(event.target.value)}><option value="new">New client</option>{clients.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}</select></label><label>Client name<input placeholder="Client or company name" value={clientName} onChange={(event) => setClientName(event.target.value)} /></label><label>Email<input type="email" placeholder="billing@email.com" value={clientEmail} onChange={(event) => setClientEmail(event.target.value)} /></label><label>Phone <span className="field-hint">+91 is added automatically</span><input required type="tel" inputMode="numeric" pattern="[0-9]{10}" maxLength={10} placeholder="9876543210" title="Enter 10 digits; +91 is added automatically" value={clientPhone} onChange={(event) => setClientPhone(normalizeIndianPhoneInput(event.target.value))} /></label><label>Billing address<textarea required rows={2} placeholder="Full billing address" value={clientAddress} onChange={(event) => setClientAddress(event.target.value)} /></label></div></div>
 

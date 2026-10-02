@@ -2,9 +2,10 @@ import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/require-auth";
 import { FinanceRecordForm } from "@/components/finance-record-form";
 import { PaymentList } from "@/components/payment-list";
+import { canManageRecords } from "@/lib/user-roles";
 
 export default async function PaymentsPage() {
-  await requireAuth();
+  const session = await requireAuth();
   const [payments, invoices] = await Promise.all([
     db.payment.findMany({ include: { client: true, invoice: true, project: true }, orderBy: { date: "desc" } }),
     db.invoice.findMany({ select: { id: true, number: true }, orderBy: { invoiceDate: "desc" } }),
@@ -18,9 +19,9 @@ export default async function PaymentsPage() {
         </div>
       </div>
 
-      <div className="payment-create-area"><FinanceRecordForm kind="payment" invoices={invoices} /></div>
+      {canManageRecords(session.user.role) && <div className="payment-create-area"><FinanceRecordForm kind="payment" invoices={invoices} /></div>}
 
-      <PaymentList payments={payments.map((payment) => ({ id: payment.id, clientName: payment.client.name, amount: payment.amount, reference: payment.reference, method: payment.method, date: payment.date.toISOString().slice(0, 10) }))} />
+      <PaymentList canManage={canManageRecords(session.user.role)} payments={payments.map((payment) => ({ id: payment.id, clientName: payment.client.name, amount: payment.amount, reference: payment.reference, method: payment.method, date: payment.date.toISOString().slice(0, 10) }))} />
     </main>
   );
 }

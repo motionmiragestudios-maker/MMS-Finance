@@ -7,6 +7,7 @@ export type WorkspaceClient = {
   phone: string;
   billingAddress: string;
   gst: string;
+  notes?: string;
 };
 
 export type WorkspaceVendor = {
@@ -38,12 +39,43 @@ export const defaultCompanyProfile: CompanyProfile = {
   quotationTerms: "This quotation is valid for 15 days from the date of issue.",
 };
 
+export type SharedCompanyProfile = { profile: CompanyProfile; logoData: string; faviconData: string; legacySettingsMigrated: boolean };
+
+export async function loadSharedCompanyProfile(): Promise<SharedCompanyProfile | null> {
+  const response = await fetch("/api/company-profile", { cache: "no-store" });
+  if (!response.ok) return null;
+  return response.json();
+}
+
 export const workspaceKeys = {
   company: "motion-mirage-company",
   logo: "motion-mirage-logo",
+  favicon: "motion-mirage-favicon",
   clients: "motion-mirage-clients",
   vendors: "motion-mirage-vendors",
 } as const;
+
+export function readSessionValue(key: string) {
+  try {
+    return window.sessionStorage.getItem(key) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+export function writeSessionValue(key: string, value: string) {
+  try {
+    if (value) window.sessionStorage.setItem(key, value);
+    else window.sessionStorage.removeItem(key);
+  } catch {
+    // no-op: storage can be unavailable in some restricted browser contexts
+  }
+}
+
+export function clearBrandingSession() {
+  writeSessionValue(workspaceKeys.logo, "");
+  writeSessionValue(workspaceKeys.favicon, "");
+}
 
 export function normalizeIndianPhoneInput(value: string) {
   const digits = value.replace(/\D/g, "");

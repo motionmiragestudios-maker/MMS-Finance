@@ -3,10 +3,11 @@
 import { FormEvent, useState } from "react";
 import { formatCurrency } from "@/lib/mock-data";
 import { ToastNotification } from "@/components/toast-notification";
+import { SearchableTable, type SearchableTableRow } from "@/components/searchable-table";
 
 type PaymentRecord = { id: string; clientName: string; amount: number; reference: string; method: string; date: string };
 
-export function PaymentList({ payments }: { payments: PaymentRecord[] }) {
+export function PaymentList({ payments, canManage = true }: { payments: PaymentRecord[]; canManage?: boolean }) {
   const [records, setRecords] = useState(payments);
   const [editing, setEditing] = useState<PaymentRecord | null>(null);
   const [message, setMessage] = useState("");
@@ -22,9 +23,26 @@ export function PaymentList({ payments }: { payments: PaymentRecord[] }) {
     setEditing(null); setMessage("Payment updated.");
   }
 
+  const rows: SearchableTableRow[] = records.map((payment) => ({
+    id: payment.id,
+    searchText: [payment.clientName, payment.reference, payment.method, payment.date, payment.amount].join(" "),
+    cells: [
+      payment.date,
+      payment.clientName,
+      payment.reference || "-",
+      payment.method,
+      formatCurrency(payment.amount),
+      ...(canManage ? [<button className="text-button" type="button" onClick={() => setEditing(payment)} key="edit">Edit</button>] : []),
+    ],
+  }));
+  const columns = [
+    { key: "date", label: "Date" }, { key: "client", label: "Client" }, { key: "reference", label: "Reference" },
+    { key: "method", label: "Method" }, { key: "amount", label: "Amount" }, ...(canManage ? [{ key: "actions", label: "Actions" }] : []),
+  ];
+
   return <>
     {message && <ToastNotification message={message} onDismiss={() => setMessage("")} />}
-    {editing && <div className="confirm-dialog" role="dialog" aria-modal="true"><form className="confirm-dialog-card form-grid" onSubmit={updatePayment}><p className="eyebrow">Edit payment</p><p className="muted">{editing.clientName}</p><label>Amount<input name="amount" required type="number" min="1" defaultValue={editing.amount} /></label><label>Date<input name="date" required type="date" defaultValue={editing.date} /></label><label>Method<select name="method" defaultValue={editing.method}><option>Bank Transfer</option><option>UPI</option><option>Cash</option><option>Card</option></select></label><label>Reference<input name="reference" defaultValue={editing.reference} /></label><div className="confirm-dialog-actions"><button className="secondary-button" type="button" onClick={() => setEditing(null)}>Cancel</button><button className="primary-button" type="submit">Save changes</button></div></form></div>}
-    <div className="space-y-4">{records.map((payment) => <div key={payment.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between gap-4"><div><div className="text-lg font-semibold text-slate-900">{payment.clientName}</div><div className="text-sm text-slate-500">{payment.reference} · {payment.method} · {payment.date}</div></div><div className="record-actions"><div className="text-right"><div className="text-lg font-semibold">{formatCurrency(payment.amount)}</div><div className="text-xs text-slate-500">Received</div></div><button className="text-button" type="button" onClick={() => setEditing(payment)}>Edit</button></div></div></div>)}</div>
+    {canManage && editing && <div className="confirm-dialog" role="dialog" aria-modal="true"><form className="confirm-dialog-card form-grid" onSubmit={updatePayment}><p className="eyebrow">Edit payment</p><p className="muted">{editing.clientName}</p><label>Amount<input name="amount" required type="number" min="1" defaultValue={editing.amount} /></label><label>Date<input name="date" required type="date" defaultValue={editing.date} /></label><label>Method<select name="method" defaultValue={editing.method}><option>Bank Transfer</option><option>UPI</option><option>Cash</option><option>Card</option></select></label><label>Reference<input name="reference" defaultValue={editing.reference} /></label><div className="confirm-dialog-actions"><button className="secondary-button" type="button" onClick={() => setEditing(null)}>Cancel</button><button className="primary-button" type="submit">Save changes</button></div></form></div>}
+    <SearchableTable columns={columns} rows={rows} placeholder="Search payments..." emptyMessage="No payments recorded yet." />
   </>;
 }

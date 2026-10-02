@@ -1,13 +1,21 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { FaviconSync } from "@/components/favicon-sync";
 import { Sidebar } from "@/components/sidebar";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isLogin = pathname === "/login";
+  const isLogin = pathname === "/login" || pathname === "/reset-password";
 
-  if (isLogin) return <main className="app-content">{children}</main>;
-
-  return <div className="app-shell"><Sidebar /><main className="app-content">{children}</main></div>;
+  return (
+    <>
+      <FaviconSync />
+      {isLogin ? (
+        <main className="app-content">{children}</main>
+      ) : (
+        <div className="app-shell"><Sidebar /><main className="app-content">{children}</main></div>
+      )}
+    </>
+  );
 }

@@ -6,19 +6,20 @@ import { requireAuth } from "@/lib/require-auth";
 import { InvoiceActions } from "@/components/invoice-actions";
 import { InvoicePaymentDetails } from "@/components/invoice-payment-details";
 import { SavedInvoiceHeader } from "@/components/saved-invoice-header";
+import { canManageRecords } from "@/lib/user-roles";
 
 export default async function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await requireAuth();
   const { id } = await params;
   const [invoice, company] = await Promise.all([
-    db.invoice.findFirst({ where: { id, ownerId: session.user.id }, include: { client: true, items: true } }),
+    db.invoice.findUnique({ where: { id }, include: { client: true, items: true } }),
     db.companyProfile.findUnique({ where: { id: "company" }, select: { upiDetails: true } }),
   ]);
   if (!invoice) notFound();
 
   return <main className="p-8">
     <Link className="text-button no-print" href="/invoices">← Back to invoices</Link>
-    <div className="invoice-detail-heading no-print"><div><p className="eyebrow">Invoice record</p><h1 className="text-3xl font-bold">{invoice.number}</h1><p className="muted">{invoice.client.name} · {invoice.invoiceDate.toISOString().slice(0, 10)}</p></div><InvoiceActions invoiceId={invoice.id} /></div>
+    <div className="invoice-detail-heading no-print"><div><p className="eyebrow">Invoice record</p><h1 className="text-3xl font-bold">{invoice.number}</h1><p className="muted">{invoice.client.name} · {invoice.invoiceDate.toISOString().slice(0, 10)}</p></div><InvoiceActions invoiceId={invoice.id} canManage={canManageRecords(session.user.role)} /></div>
     <article className="invoice-paper saved-invoice-paper">
       <SavedInvoiceHeader fallbackUpi={company?.upiDetails ?? ""} />
       <div className="invoice-meta"><div><span>Invoice number</span><strong>{invoice.number}</strong></div><div><span>Issue date</span><strong>{invoice.invoiceDate.toISOString().slice(0, 10)}</strong></div><div><span>Due date</span><strong>{invoice.dueDate.toISOString().slice(0, 10)}</strong></div></div>

@@ -3,10 +3,11 @@
 import { FormEvent, useState } from "react";
 import { formatCurrency } from "@/lib/mock-data";
 import { ToastNotification } from "@/components/toast-notification";
+import { SearchableTable, type SearchableTableRow } from "@/components/searchable-table";
 
 type ExpenseRecord = { id: string; category: string; vendor: string; amount: number; date: string; method: string; projectName: string | null };
 
-export function ExpenseList({ expenses }: { expenses: ExpenseRecord[] }) {
+export function ExpenseList({ expenses, canManage = true }: { expenses: ExpenseRecord[]; canManage?: boolean }) {
   const [records, setRecords] = useState(expenses);
   const [pending, setPending] = useState<ExpenseRecord | null>(null);
   const [message, setMessage] = useState("");
@@ -36,10 +37,29 @@ export function ExpenseList({ expenses }: { expenses: ExpenseRecord[] }) {
     setEditing(null); setMessage("Expense updated.");
   }
 
+  const rows: SearchableTableRow[] = records.map((expense) => ({
+    id: expense.id,
+    searchText: [expense.date, expense.category, expense.vendor, expense.method, expense.projectName].filter(Boolean).join(" "),
+    cells: [
+      expense.date,
+      expense.category,
+      expense.vendor,
+      expense.projectName || "General",
+      expense.method,
+      formatCurrency(expense.amount),
+      ...(canManage ? [<div className="record-actions" key="actions"><button className="text-button" type="button" onClick={() => setEditing(expense)}>Edit</button><button className="remove-button" type="button" aria-label={`Delete ${expense.category} expense`} onClick={() => setPending(expense)}>×</button></div>] : []),
+    ],
+  }));
+  const columns = [
+    { key: "date", label: "Date" }, { key: "category", label: "Category" }, { key: "vendor", label: "Vendor" },
+    { key: "project", label: "Project" }, { key: "method", label: "Method" }, { key: "amount", label: "Amount" },
+    ...(canManage ? [{ key: "actions", label: "Actions" }] : []),
+  ];
+
   return <>
     {message && <ToastNotification message={message} onDismiss={() => setMessage("")} />}
-    {pending && <div className="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="expense-delete-title"><div className="confirm-dialog-card"><p className="eyebrow">Confirm deletion</p><h3 id="expense-delete-title">Delete this expense?</h3><p>{pending.category} from {pending.vendor} for {formatCurrency(pending.amount)} will be removed.</p><div className="confirm-dialog-actions"><button className="secondary-button" type="button" onClick={() => setPending(null)}>Cancel</button><button className="danger-button" type="button" onClick={() => void deleteExpense(pending)}>Delete expense</button></div></div></div>}
-    {editing && <div className="confirm-dialog" role="dialog" aria-modal="true"><form className="confirm-dialog-card form-grid" onSubmit={updateExpense}><p className="eyebrow">Edit expense</p><label>Category<input name="category" required defaultValue={editing.category} /></label><label>Vendor<input name="vendor" required defaultValue={editing.vendor} /></label><label>Amount<input name="amount" required type="number" min="1" defaultValue={editing.amount} /></label><label>Date<input name="date" required type="date" defaultValue={editing.date} /></label><label>Method<select name="method" defaultValue={editing.method}><option>Bank Transfer</option><option>UPI</option><option>Cash</option><option>Card</option></select></label><div className="confirm-dialog-actions"><button className="secondary-button" type="button" onClick={() => setEditing(null)}>Cancel</button><button className="primary-button" type="submit">Save changes</button></div></form></div>}
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{records.length ? records.map((expense) => <article key={expense.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-start justify-between gap-4"><div><h2 className="text-lg font-semibold">{expense.category}</h2><p className="text-sm text-slate-500">{expense.vendor}</p></div><div className="record-actions"><button className="text-button" type="button" onClick={() => setEditing(expense)}>Edit</button><button className="remove-button" type="button" aria-label={`Delete ${expense.category} expense`} onClick={() => setPending(expense)}>×</button></div></div><div className="mt-4 flex items-end justify-between gap-3 text-sm text-slate-600"><div><p>{expense.date}</p><p>{expense.method}{expense.projectName ? ` · ${expense.projectName}` : " · General"}</p></div><span className="text-lg font-semibold text-slate-900">{formatCurrency(expense.amount)}</span></div></article>) : <p className="muted">No expenses recorded yet.</p>}</div>
+    {canManage && pending && <div className="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="expense-delete-title"><div className="confirm-dialog-card"><p className="eyebrow">Confirm deletion</p><h3 id="expense-delete-title">Delete this expense?</h3><p>{pending.category} from {pending.vendor} for {formatCurrency(pending.amount)} will be removed.</p><div className="confirm-dialog-actions"><button className="secondary-button" type="button" onClick={() => setPending(null)}>Cancel</button><button className="danger-button" type="button" onClick={() => void deleteExpense(pending)}>Delete expense</button></div></div></div>}
+    {canManage && editing && <div className="confirm-dialog" role="dialog" aria-modal="true"><form className="confirm-dialog-card form-grid" onSubmit={updateExpense}><p className="eyebrow">Edit expense</p><label>Category<input name="category" required defaultValue={editing.category} /></label><label>Vendor<input name="vendor" required defaultValue={editing.vendor} /></label><label>Amount<input name="amount" required type="number" min="1" defaultValue={editing.amount} /></label><label>Date<input name="date" required type="date" defaultValue={editing.date} /></label><label>Method<select name="method" defaultValue={editing.method}><option>Bank Transfer</option><option>UPI</option><option>Cash</option><option>Card</option></select></label><div className="confirm-dialog-actions"><button className="secondary-button" type="button" onClick={() => setEditing(null)}>Cancel</button><button className="primary-button" type="submit">Save changes</button></div></form></div>}
+    <SearchableTable columns={columns} rows={rows} placeholder="Search expenses..." emptyMessage="No expenses recorded yet." />
   </>;
 }

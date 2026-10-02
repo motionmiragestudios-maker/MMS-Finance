@@ -3,13 +3,46 @@ import { requireAuth } from "@/lib/require-auth";
 import { FinanceRecordForm } from "@/components/finance-record-form";
 import Link from "next/link";
 import { QuotationActions } from "@/components/quotation-actions";
+import { assignQuotationNumber } from "@/lib/quotation-numbers";
+import { canManageRecords } from "@/lib/user-roles";
+import { SearchableTable, type SearchableTableRow } from "@/components/searchable-table";
 
 export default async function ProjectsPage() {
-  await requireAuth();
+  const session = await requireAuth();
   const [projects, clients] = await Promise.all([
     db.project.findMany({ include: { client: true }, orderBy: { shootDate: "asc" } }),
     db.client.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
   ]);
+  const quotationNumbers = new Map<string, string>();
+  for (const project of projects) {
+    quotationNumbers.set(project.id, project.quotationNumber ?? await assignQuotationNumber(project.id) ?? "Not assigned");
+  }
+  const canManage = canManageRecords(session.user.role);
+  const columns = [
+    { key: "number", label: "Quotation" }, { key: "name", label: "Title" }, { key: "client", label: "Client" },
+    { key: "date", label: "Date" }, { key: "valid", label: "Valid until" }, { key: "amount", label: "Amount" },
+    { key: "status", label: "Status" }, { key: "actions", label: "Actions" },
+  ];
+  const rows: SearchableTableRow[] = projects.map((project) => {
+    const number = quotationNumbers.get(project.id) ?? "Not assigned";
+    const status = project.status.replace(/([a-z])([A-Z])/g, "$1 $2");
+    const date = project.startDate.toISOString().slice(0, 10);
+    const validUntil = project.deliveryDate.toISOString().slice(0, 10);
+    return {
+      id: project.id,
+      searchText: [number, project.name, project.client.name, project.description, date, validUntil, status, project.quotationAmount].join(" "),
+      cells: [
+        number,
+        project.name,
+        project.client.name,
+        date,
+        validUntil,
+        `₹${project.quotationAmount.toLocaleString("en-IN")}`,
+        status,
+        <div className="record-actions" key="actions"><Link className="secondary-button" href={`/projects/${project.id}`}>View</Link><QuotationActions quotationId={project.id} showPrint={false} canDelete={canManage} /></div>,
+      ],
+    };
+  });
   return (
     <main className="p-8">
       <div className="mb-6 flex items-center justify-between">
@@ -19,28 +52,8 @@ export default async function ProjectsPage() {
         </div>
       </div>
 
-      <div className="quotation-create-area"><FinanceRecordForm kind="project" clients={clients} /></div>
-
-      <div className="space-y-4">
-        {projects.length ? projects.map((project) => (
-          <div key={project.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h2 className="text-xl font-semibold text-slate-900">{project.name}</h2>
-                <p className="text-sm text-slate-500">{project.client.name} · {project.description || "Quotation without description"}</p>
-              </div>
-              <div className="record-actions"><Link className="secondary-button" href={`/projects/${project.id}`}>View quotation</Link><QuotationActions quotationId={project.id} showPrint={false} /><span className="inline-flex rounded-full bg-indigo-100 px-2 py-1 text-[10px] font-medium text-indigo-700">{project.status.replace(/([a-z])([A-Z])/g, "$1 $2")}</span></div>
-            </div>
-
-            <div className="mt-4 grid gap-4 md:grid-cols-4 text-sm text-slate-600">
-              <div><span className="block text-slate-400">Quotation date</span>{project.startDate.toISOString().slice(0, 10)}</div>
-              <div><span className="block text-slate-400">Valid until</span>{project.deliveryDate.toISOString().slice(0, 10)}</div>
-              <div><span className="block text-slate-400">Quoted amount</span>₹{project.quotationAmount.toLocaleString("en-IN")}</div>
-              <div><span className="block text-slate-400">Status</span>{project.status.replace(/([a-z])([A-Z])/g, "$1 $2")}</div>
-            </div>
-          </div>
-        )) : <p className="muted">No quotations yet. Create your first quotation above.</p>}
-      </div>
+      {canManage && <div className="quotation-create-area"><FinanceRecordForm kind="project" clients={clients} /></div>}
+      <SearchableTable columns={columns} rows={rows} placeholder="Search quotations, titles, or clients..." emptyMessage="No quotations yet." />
     </main>
   );
 }

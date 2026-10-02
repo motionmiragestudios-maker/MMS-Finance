@@ -1,14 +1,17 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { canManageRecords } from "@/lib/user-roles";
+import { sendDiscordNotification } from "@/lib/notification-delivery";
 import { NextResponse } from "next/server";
 
 function isValidDate(value: unknown) {
   return typeof value === "string" && !Number.isNaN(new Date(`${value}T00:00:00.000Z`).getTime());
 }
 
-async function nextInvoiceNumber() {
-  const year = new Date().getUTCFullYear();
-  const prefix = `MMS-INV-${year}-`;
+async function nextInvoiceNumber(invoiceDate: Date) {
+  const month = String(invoiceDate.getUTCMonth() + 1).padStart(2, "0");
+  const year = invoiceDate.getUTCFullYear();
+  const prefix = `MMS-INV-${month}-${year}-`;
   const invoices = await db.invoice.findMany({ where: { number: { startsWith: prefix } }, select: { number: true } });
   const highest = invoices.reduce((max, invoice) => {
     const sequence = Number(invoice.number.slice(prefix.length));
@@ -22,17 +25,18 @@ export async function GET(request: Request) {
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   if (new URL(request.url).searchParams.get("nextNumber") === "1") {
-    return NextResponse.json({ invoiceNumber: await nextInvoiceNumber() });
+    const requestedDate = new URL(request.url).searchParams.get("date") ?? "";
+    const invoiceDate = isValidDate(requestedDate) ? new Date(`${requestedDate}T00:00:00.000Z`) : new Date();
+    return NextResponse.json({ invoiceNumber: await nextInvoiceNumber(invoiceDate) });
   }
 
   const invoiceId = new URL(request.url).searchParams.get("id");
   if (invoiceId) {
-    const invoice = await db.invoice.findFirst({ where: { id: invoiceId, ownerId: session.user.id }, include: { client: true, items: true } });
+    const invoice = await db.invoice.findUnique({ where: { id: invoiceId }, include: { client: true, items: true } });
     return invoice ? NextResponse.json(invoice) : NextResponse.json({ error: "Invoice not found." }, { status: 404 });
   }
 
   const invoices = await db.invoice.findMany({
-    where: { ownerId: session.user.id },
     include: { client: true, items: true },
     orderBy: { invoiceDate: "desc" },
   });
@@ -42,11 +46,12 @@ export async function GET(request: Request) {
 export async function DELETE(request: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canManageRecords(session.user.role)) return NextResponse.json({ error: "Your role cannot delete invoices." }, { status: 403 });
   const id = new URL(request.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Invoice id is required." }, { status: 400 });
   try {
     await db.$transaction(async (transaction) => {
-      const invoice = await transaction.invoice.findFirst({ where: { id, ownerId: session.user.id }, select: { id: true } });
+      const invoice = await transaction.invoice.findUnique({ where: { id }, select: { id: true } });
       if (!invoice) throw new Error("not-found");
       await transaction.payment.deleteMany({ where: { invoiceId: id } });
       await transaction.invoiceItem.deleteMany({ where: { invoiceId: id } });
@@ -62,12 +67,12 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { invoiceNumber, invoiceDate, dueDate, clientId, clientName, clientEmail, clientPhone, clientAddress, notes, items } = body;
-    const savedInvoiceNumber = typeof invoiceNumber === "string" && invoiceNumber.trim() ? invoiceNumber.trim() : await nextInvoiceNumber();
+    const { invoiceDate, dueDate, clientId, clientName, clientEmail, clientPhone, clientAddress, notes, items } = body;
 
     if (!isValidDate(invoiceDate) || !isValidDate(dueDate) || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: "Invoice details and at least one line item are required." }, { status: 400 });
     }
+    const savedInvoiceNumber = await nextInvoiceNumber(new Date(`${invoiceDate}T00:00:00.000Z`));
 
     const cleanItems = items.map((item: { description?: unknown; quantity?: unknown; rate?: unknown }) => ({
       description: typeof item.description === "string" ? item.description.trim() : "",
@@ -124,6 +129,8 @@ export async function POST(request: Request) {
       include: { client: true, items: true },
     });
 
+    await sendDiscordNotification("invoice", `New invoice ${invoice.number} created for ${invoice.client.name}: INR ${invoice.total.toLocaleString("en-IN")}.`).catch(() => false);
+
     return NextResponse.json(invoice, { status: 201 });
   } catch (error) {
     console.error("Invoice creation failed", error);
@@ -134,9 +141,10 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canManageRecords(session.user.role)) return NextResponse.json({ error: "Your role cannot edit invoices." }, { status: 403 });
   try {
     const body = await request.json();
-    const invoice = await db.invoice.findFirst({ where: { id: body.id, ownerId: session.user.id } });
+    const invoice = await db.invoice.findUnique({ where: { id: body.id } });
     if (!invoice || !Array.isArray(body.items) || !isValidDate(body.invoiceDate) || !isValidDate(body.dueDate)) return NextResponse.json({ error: "Invoice not found or incomplete." }, { status: 400 });
     const items: { description: string; quantity: number; rate: number; discount: number; tax: number }[] = body.items.map((item: { description?: unknown; quantity?: unknown; rate?: unknown }) => ({ description: typeof item.description === "string" ? item.description.trim() : "", quantity: Number(item.quantity), rate: Number(item.rate), discount: 0, tax: 0 }));
     if (items.some((item) => !item.description || !Number.isInteger(item.quantity) || item.quantity < 1 || !Number.isInteger(item.rate) || item.rate < 0)) return NextResponse.json({ error: "Each line must have a description, positive quantity, and valid rate." }, { status: 400 });

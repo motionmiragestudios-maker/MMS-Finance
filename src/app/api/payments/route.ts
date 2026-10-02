@@ -1,14 +1,17 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
+import { canManageRecords } from "@/lib/user-roles";
+import { sendDiscordNotification } from "@/lib/notification-delivery";
 
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canManageRecords(session.user.role)) return NextResponse.json({ error: "Your role cannot record payments." }, { status: 403 });
   try {
     const body = await request.json();
     const invoiceId = typeof body.invoiceId === "string" ? body.invoiceId : "";
-    const invoice = await db.invoice.findFirst({ where: { id: invoiceId, ownerId: session.user.id } });
+    const invoice = await db.invoice.findUnique({ where: { id: invoiceId } });
     const amount = Number(body.amount);
     if (!invoice || !Number.isInteger(amount) || amount <= 0 || !body.date || amount > invoice.outstanding) return NextResponse.json({ error: "Choose an invoice, valid amount, date, and do not exceed the outstanding balance." }, { status: 400 });
     const payment = await db.payment.create({ data: {
@@ -17,6 +20,7 @@ export async function POST(request: Request) {
     } });
     const paid = invoice.paid + amount;
     await db.invoice.update({ where: { id: invoice.id }, data: { paid, outstanding: Math.max(invoice.total - paid, 0), status: paid >= invoice.total ? "Paid" : "PartiallyPaid" } });
+    await sendDiscordNotification("payment", `Payment recorded: INR ${amount.toLocaleString("en-IN")} for invoice ${invoice.number}.`).catch(() => false);
     return NextResponse.json(payment, { status: 201 });
   } catch { return NextResponse.json({ error: "Unable to record payment." }, { status: 400 }); }
 }
@@ -24,6 +28,7 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canManageRecords(session.user.role)) return NextResponse.json({ error: "Your role cannot edit payments." }, { status: 403 });
   try {
     const body = await request.json();
     const amount = Number(body.amount);

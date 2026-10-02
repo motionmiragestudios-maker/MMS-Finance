@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
+import { canManageRecords } from "@/lib/user-roles";
 
 export async function GET() {
   const session = await auth();
@@ -11,6 +12,7 @@ export async function GET() {
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canManageRecords(session.user.role)) return NextResponse.json({ error: "Your role cannot add clients." }, { status: 403 });
   try {
     const body = await request.json();
     const name = typeof body.name === "string" ? body.name.trim() : "";
@@ -23,15 +25,50 @@ export async function POST(request: Request) {
       id: `cli-${crypto.randomUUID()}`, name, contactPerson: name,
       email, phone: phone.replace(/\s+/g, ""), billingAddress,
       currency: "INR", gst: typeof body.gst === "string" ? body.gst.trim() : "",
-      paymentTerms: "Net 15", notes: "", outstandingBalance: 0,
+      paymentTerms: "Net 15", notes: typeof body.notes === "string" ? body.notes.trim() : "", outstandingBalance: 0,
     } });
     return NextResponse.json(client, { status: 201 });
   } catch { return NextResponse.json({ error: "Unable to create client." }, { status: 400 }); }
 }
 
+export async function PATCH(request: Request) {
+  const session = await auth();
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canManageRecords(session.user.role)) return NextResponse.json({ error: "Your role cannot edit clients." }, { status: 403 });
+
+  try {
+    const body = await request.json();
+    const id = typeof body.id === "string" ? body.id : "";
+    if (!id) return NextResponse.json({ error: "Client id is required." }, { status: 400 });
+
+    const existing = await db.client.findUnique({ where: { id } });
+    if (!existing) return NextResponse.json({ error: "Client not found." }, { status: 404 });
+
+    const name = typeof body.name === "string" ? body.name.trim() : existing.name;
+    const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : existing.email;
+    const phone = typeof body.phone === "string" ? body.phone.replace(/\s+/g, "") : existing.phone;
+    const billingAddress = typeof body.billingAddress === "string" ? body.billingAddress.trim() : existing.billingAddress;
+    const gst = typeof body.gst === "string" ? body.gst.trim() : existing.gst;
+    const notes = typeof body.notes === "string" ? body.notes.trim() : existing.notes;
+
+    if (!name || !email || !billingAddress) return NextResponse.json({ error: "Client name, email, and billing address are required." }, { status: 400 });
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return NextResponse.json({ error: "Enter a valid client email address." }, { status: 400 });
+    if (!/^\+91\d{10}$/.test(phone)) return NextResponse.json({ error: "Phone must use +91 followed by 10 digits." }, { status: 400 });
+
+    const client = await db.client.update({
+      where: { id },
+      data: { name, contactPerson: name, email, phone, billingAddress, gst, notes },
+    });
+    return NextResponse.json(client);
+  } catch {
+    return NextResponse.json({ error: "Unable to update this client." }, { status: 400 });
+  }
+}
+
 export async function DELETE(request: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canManageRecords(session.user.role)) return NextResponse.json({ error: "Your role cannot delete clients." }, { status: 403 });
   try {
     const { id } = await request.json();
     const client = await db.client.findUnique({ where: { id }, select: { id: true } });

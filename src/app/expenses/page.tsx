@@ -2,9 +2,10 @@ import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/require-auth";
 import { FinanceRecordForm } from "@/components/finance-record-form";
 import { ExpenseList } from "@/components/expense-list";
+import { canManageRecords } from "@/lib/user-roles";
 
 export default async function ExpensesPage() {
-  await requireAuth();
+  const session = await requireAuth();
   const [expenses, projects] = await Promise.all([
     db.expense.findMany({ include: { project: true }, orderBy: { date: "desc" } }),
     db.project.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
@@ -18,9 +19,9 @@ export default async function ExpensesPage() {
         </div>
       </div>
 
-      <div className="expense-create-area"><FinanceRecordForm kind="expense" projects={projects} /></div>
+      {canManageRecords(session.user.role) && <div className="expense-create-area"><FinanceRecordForm kind="expense" projects={projects} /></div>}
 
-      <ExpenseList expenses={expenses.map((expense) => ({ id: expense.id, category: expense.category, vendor: expense.vendor, amount: expense.amount, date: expense.date.toISOString().slice(0, 10), method: expense.method, projectName: expense.project?.name ?? null }))} />
+      <ExpenseList canManage={canManageRecords(session.user.role)} expenses={expenses.map((expense) => ({ id: expense.id, category: expense.category, vendor: expense.vendor, amount: expense.amount, date: expense.date.toISOString().slice(0, 10), method: expense.method, projectName: expense.project?.name ?? null }))} />
     </main>
   );
 }

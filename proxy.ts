@@ -7,5 +7,5 @@ export const proxy = auth((request) => {
 });
 
 export const config = {
-  matcher: ["/((?!api/auth|login|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!api/auth|login|reset-password|_next/static|_next/image|favicon.ico).*)"],
 };

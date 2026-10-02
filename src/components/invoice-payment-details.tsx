@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { defaultCompanyProfile, workspaceKeys } from "@/lib/workspace";
+import { defaultCompanyProfile, loadSharedCompanyProfile } from "@/lib/workspace";
 import type { CompanyProfile } from "@/types/finance";
 import { UpiQr } from "@/components/upi-qr";
 
@@ -10,11 +10,11 @@ type InvoicePaymentDetailsProps = { amount: number; fallbackUpi?: string };
 export function InvoicePaymentDetails({ amount, fallbackUpi = "" }: InvoicePaymentDetailsProps) {
   const [profile, setProfile] = useState<CompanyProfile>({ ...defaultCompanyProfile, upiDetails: fallbackUpi });
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const stored = localStorage.getItem(workspaceKeys.company);
-      if (stored) setProfile({ ...defaultCompanyProfile, ...JSON.parse(stored) });
-    }, 0);
-    return () => window.clearTimeout(timer);
+    let active = true;
+    void loadSharedCompanyProfile().then((shared) => {
+      if (active && shared) setProfile({ ...defaultCompanyProfile, ...shared.profile });
+    });
+    return () => { active = false; };
   }, []);
   const bank = [
     profile.bankAccountName && `Account name: ${profile.bankAccountName}`,

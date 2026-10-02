@@ -3,9 +3,9 @@ import { formatCurrency } from "@/lib/mock-data";
 import { requireAuth } from "@/lib/require-auth";
 
 export default async function FinancePage() {
-  const session = await requireAuth();
+  await requireAuth();
   const [invoiceTotals, paymentTotals, expenseTotals] = await Promise.all([
-    db.invoice.aggregate({ where: { ownerId: session.user.id }, _sum: { total: true, outstanding: true } }),
+    db.invoice.aggregate({ _sum: { total: true, outstanding: true } }),
     db.payment.aggregate({ _sum: { amount: true } }),
     db.expense.aggregate({ _sum: { amount: true } }),
   ]);

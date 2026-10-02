@@ -1,10 +1,12 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
+import { canManageRecords } from "@/lib/user-roles";
 
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canManageRecords(session.user.role)) return NextResponse.json({ error: "Your role cannot add expenses." }, { status: 403 });
   try {
     const body = await request.json();
     const amount = Number(body.amount);
@@ -19,6 +21,7 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canManageRecords(session.user.role)) return NextResponse.json({ error: "Your role cannot delete expenses." }, { status: 403 });
   try {
     const body = await request.json();
     const id = typeof body.id === "string" ? body.id : "";
@@ -34,6 +37,7 @@ export async function DELETE(request: Request) {
 export async function PATCH(request: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canManageRecords(session.user.role)) return NextResponse.json({ error: "Your role cannot edit expenses." }, { status: 403 });
   try {
     const body = await request.json();
     const amount = Number(body.amount);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { defaultCompanyProfile, workspaceKeys } from "@/lib/workspace";
+import { defaultCompanyProfile, loadSharedCompanyProfile } from "@/lib/workspace";
 import type { CompanyProfile } from "@/types/finance";
 
 export function QuotationDocumentHeader() {
@@ -9,12 +9,12 @@ export function QuotationDocumentHeader() {
   const [logo, setLogo] = useState("");
 
   useEffect(() => {
-    const load = () => {
-      const storedProfile = localStorage.getItem(workspaceKeys.company);
-      setCompany(storedProfile ? { ...defaultCompanyProfile, ...JSON.parse(storedProfile) } : defaultCompanyProfile);
-      setLogo(localStorage.getItem(workspaceKeys.logo) ?? "");
+    const load = async () => {
+      const shared = await loadSharedCompanyProfile();
+      setCompany(shared ? { ...defaultCompanyProfile, ...shared.profile } : defaultCompanyProfile);
+      setLogo(shared?.logoData ?? "");
     };
-    load();
+    void load();
     window.addEventListener("motion-mirage-logo-updated", load);
     window.addEventListener("storage", load);
     return () => {

@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
+import { BrandWordmark } from "@/components/brand-wordmark";
+import { clearBrandingSession } from "@/lib/workspace";
 
 const navItems = [
   { label: "Create invoice", href: "/" },
@@ -13,6 +15,7 @@ const navItems = [
   { label: "Payments", href: "/payments" },
   { label: "Expenses", href: "/expenses" },
   { label: "Settings", href: "/settings" },
+  { label: "Notifications", href: "/notifications" },
   { label: "Profile", href: "/profile" },
 ];
 
@@ -22,8 +25,7 @@ export function Sidebar() {
   return (
     <aside className="w-full max-w-[260px] border-r border-slate-200 bg-slate-950 text-slate-100">
       <div className="sidebar-brand">
-        <div className="brand-symbol" aria-hidden="true"><span>M</span><i /></div>
-        <div><div className="brand-name">Motion Mirage</div><div className="brand-caption">Studio operations</div></div>
+        <BrandWordmark className="brand-wordmark--compact" />
       </div>
 
       <nav className="space-y-1 p-4">
@@ -38,7 +40,7 @@ export function Sidebar() {
           </Link>
         ))}
       </nav>
-      <div className="sidebar-footer"><span className="status-dot" />Workspace online<button className="sidebar-logout" type="button" onClick={() => void signOut({ callbackUrl: "/login" })}>Log out</button></div>
+      <div className="sidebar-footer"><span className="status-dot" />Workspace online<button className="sidebar-logout" type="button" onClick={async () => { clearBrandingSession(); await signOut({ callbackUrl: "/login" }); }}>Log out</button></div>
     </aside>
   );
 }

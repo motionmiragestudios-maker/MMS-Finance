@@ -4,9 +4,9 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ToastNotification } from "@/components/toast-notification";
 
-type Props = { invoiceId: string; invoiceNumber: string; outstanding: number };
+type Props = { invoiceId: string; invoiceNumber: string; outstanding: number; canManage?: boolean };
 
-export function InvoicePaymentButton({ invoiceId, invoiceNumber, outstanding }: Props) {
+export function InvoicePaymentButton({ invoiceId, invoiceNumber, outstanding, canManage = true }: Props) {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const router = useRouter();
@@ -23,6 +23,7 @@ export function InvoicePaymentButton({ invoiceId, invoiceNumber, outstanding }: 
   }
 
   if (!outstanding) return <span className="paid-label">Paid</span>;
+  if (!canManage) return null;
 
   return <>
     {message && <ToastNotification message={message} onDismiss={() => setMessage("")} />}
