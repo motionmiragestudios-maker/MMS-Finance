@@ -43,6 +43,8 @@ npm run db:seed
 
 ## Deployment performance
 
+- Set `AUTH_SECRET` in the hosting provider's environment variables for both the Production build and runtime. Generate a strong value with `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`, keep it stable across deployments, and never commit it to the repository. A missing or weak secret intentionally stops the build rather than deploying an app whose authentication cannot work.
+- Set `NEXTAUTH_URL` to the deployed HTTPS app URL in the same environment.
 - Keep the application server and PostgreSQL database in the same region where possible. If the application is deployed in Warsaw, a database in a distant region will still add network latency to every request.
 - Set `DIRECT_URL` in the deployment environment to the PostgreSQL direct/non-pooled connection string. Keep `DATABASE_URL` pointed at the runtime connection pool if the hosting provider supplies one. Prisma uses `DIRECT_URL` for schema operations such as `npm run db:push`, avoiding connection limits on Supabase's session pooler.
 - For Supabase deployments, runtime connections use the Transaction pooler (port `6543`) instead of the Session pooler (port `5432`). The app switches Supabase pooler URLs to port `6543`, limits each Prisma client to one connection, and enables PgBouncer compatibility; use the direct connection URL for `DIRECT_URL`.
