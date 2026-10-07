@@ -6,6 +6,7 @@ import { defaultCompanyProfile, formatIndianPhone, loadSharedCompanyProfile, nor
 import type { CompanyProfile } from "@/types/finance";
 import { ToastNotification } from "@/components/toast-notification";
 import { InvoicePaymentDetails } from "@/components/invoice-payment-details";
+import { printInvoice } from "@/lib/invoice-print";
 
 type LineItem = { id: number; description: string; quantity: number; rate: number };
 
@@ -105,7 +106,7 @@ export function InvoiceBuilder() {
   async function saveAndPrint() {
     setIsPrinting(true);
     const saved = await saveInvoice();
-    if (saved) window.print();
+    if (saved) printInvoice(invoiceNumber);
     setIsPrinting(false);
   }
 

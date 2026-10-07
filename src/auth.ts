@@ -28,7 +28,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
   secret: authSecret || requireServerSecret("AUTH_SECRET"),
   pages: { signIn: "/login" },
-  session: { strategy: "jwt", maxAge: 60 * 60 * 8 },
+  session: { strategy: "jwt", maxAge: 60 * 60 * 24 * 30 },
   providers: [
     Credentials({
       credentials: {
